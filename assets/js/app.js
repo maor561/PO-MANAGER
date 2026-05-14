@@ -785,6 +785,7 @@ const app = {
             try {
                 const res = await fetch('/api/items');
                 if (res.ok) { this.items = await res.json(); this.useApi = true; return; }
+                else console.warn('API unavailable (status ' + res.status + '), using localStorage');
             } catch (e) { console.warn('API unavailable, using localStorage'); }
         }
         const data = localStorage.getItem('po_items_v2');
