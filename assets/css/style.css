@@ -733,9 +733,20 @@ input[type="file"] { display: none; }
 .dash-kpi-value.danger  { color: var(--danger); }
 .dash-kpi-value.text    { font-size: 15px; color: var(--gray-800); font-weight: 700; }
 
-/* Charts grid */
+/* Hero chart - Supplier Performance */
+.chart-hero {
+    margin-bottom: 20px;
+    border-left: 4px solid var(--primary) !important;
+}
+.chart-hero h4 {
+    font-size: 14px !important;
+    color: var(--primary) !important;
+}
+.chart-hero canvas { max-height: 320px !important; }
+
+/* Secondary charts grid */
 .dash-charts-row {
-    display: grid; grid-template-columns: 1fr 1fr 2fr;
+    display: grid; grid-template-columns: 1fr 2fr;
     gap: 16px; margin-bottom: 24px;
 }
 .chart-box-wide { grid-column: span 1; }
