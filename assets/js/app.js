@@ -333,7 +333,7 @@ const app = {
     },
 
     isArrivalDelayed(item) {
-        if (!item.arrivalDate || item.arrivalCompleted) return false;
+        if (!item.arrivalDate || item.hslwhDate) return false;
         const today = new Date(); today.setHours(0,0,0,0);
         const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
         return today > arrival;
@@ -543,8 +543,13 @@ const app = {
             this.stages.forEach(stage => {
                 if (stage.type === 'text') {
                     const val = (item[stage.key] || '').replace(/"/g, '&quot;');
-                    html += `<td><input type="text" class="tracing-input" value="${val}" placeholder="—"
-                                 onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)"></td>`;
+                    const isCompleted = val ? true : false;
+                    const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
+                    html += `<td>
+                        <div class="${completedClass}">
+                            <input type="text" class="tracing-input" value="${val}" placeholder="—"
+                                 onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)">
+                        </div></td>`;
                 } else if (stage.type === 'date') {
                     const dateVal = item[stage.key] || '';
                     const isCompleted = dateVal ? true : false;
