@@ -6,7 +6,6 @@ const DEFAULT_FIELDS = [
     { id: 'quantity',      name: 'Qty',              required: false, type: 'number'   },
     { id: 'project',       name: 'Project',          required: true,  type: 'text'     },
     { id: 'pd',            name: 'Purchase Req.',    required: false, type: 'date'     },
-    { id: 'poNumber',      name: 'PO #',             required: false, type: 'text'     },
     { id: 'po',            name: 'PO Date',          required: false, type: 'date'     },
     { id: 'supplier',      name: 'Supplier',         required: false, type: 'text'     },
     { id: 'wd',            name: 'Working Days',     required: false, type: 'number'   },
@@ -14,11 +13,12 @@ const DEFAULT_FIELDS = [
 ];
 
 const DEFAULT_STAGES = [
-    { id: 'eq',      name: 'EQ',           key: 'eqDate',       completedKey: 'eqCompleted'      },
-    { id: 'coc',     name: 'COC',          key: 'cocDate',      completedKey: 'cocCompleted'     },
-    { id: 'arrival', name: 'Arrival Date', key: 'arrivalDate',  completedKey: 'arrivalCompleted' },
-    { id: 'tracing', name: 'Tracing #',    key: 'tracingNumber', type: 'text'                    },
-    { id: 'hslwh',   name: 'HSL WH',       key: 'hslwhDate',   completedKey: 'hslwhCompleted'   }
+    { id: 'poNumber', name: 'PO #',         key: 'poNumber',     type: 'text'                    },
+    { id: 'eq',       name: 'EQ',           key: 'eqDate',       completedKey: 'eqCompleted'      },
+    { id: 'coc',      name: 'COC',          key: 'cocDate',      completedKey: 'cocCompleted'     },
+    { id: 'arrival',  name: 'Arrival Date', key: 'arrivalDate',  completedKey: 'arrivalCompleted' },
+    { id: 'tracing',  name: 'Tracing #',    key: 'tracingNumber', type: 'text'                   },
+    { id: 'hslwh',    name: 'HSL WH',       key: 'hslwhDate',    completedKey: 'hslwhCompleted'  }
 ];
 
 const app = {
