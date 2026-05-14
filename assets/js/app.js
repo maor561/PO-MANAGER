@@ -706,6 +706,7 @@ const app = {
             try {
                 const wb   = XLSX.read(e.target.result, { type: 'binary' });
                 const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                this.items = []; // Clear all existing items
                 data.forEach(row => {
                     const item = { id: String(Date.now() + Math.random()), serialNumber: this.getNextSerial(), createdAt: new Date().toISOString() };
                     this.fields.forEach(f => { if (f.type !== 'auto') item[f.id] = row[f.name] || ''; });
@@ -717,7 +718,7 @@ const app = {
                 });
                 await this.saveItems();
                 this.renderItems();
-                this.showMessage(`${data.length} item(s) imported!`, 'success');
+                this.showMessage(`${data.length} item(s) imported (replaced all data)!`, 'success');
                 event.target.value = '';
             } catch (err) {
                 this.showMessage('Error importing file: ' + err.message, 'error');
