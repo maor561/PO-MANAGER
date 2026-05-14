@@ -3,131 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PO Manager - Purchase Order Tracking</title>
+    <title>PO Manager</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📦 PO Manager</h1>
-            <p>Supply chain tracking from demand to warehouse receipt</p>
-        </header>
 
-        <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <button class="btn-primary" onclick="app.addNewItem()">➕ Add Item</button>
-                <button class="btn-primary" onclick="document.getElementById('importFile').click()">📤 Import Excel</button>
-                <input type="file" id="importFile" accept=".xlsx,.xls,.csv" onchange="app.importFromExcel(event)">
-                <button class="btn-primary" onclick="app.exportToExcel()">📥 Export Excel</button>
-                <button class="btn-primary" onclick="app.openSettings()">⚙️ Settings</button>
-            </div>
-            <div class="toolbar-right">
-                <button class="btn-secondary" id="toggleCompletedBtn" onclick="app.toggleHideCompleted()">👁 Hide Completed</button>
-                <input type="text" id="searchBox" placeholder="Search..." onkeyup="app.filterItems()">
+<div class="app-shell">
+
+    <!-- ── Top Bar ────────────────────────────────────── -->
+    <header class="topbar">
+        <div class="topbar-brand">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4a2 2 0 012 2v6a2 2 0 01-2 2h-4"/>
+                <path d="M12 17v4M8 17v4M4 21h12"/>
+            </svg>
+            <div>
+                <div class="brand-title">PO Manager</div>
+                <div class="brand-sub">Supply Chain Tracking</div>
             </div>
         </div>
 
-        <div class="message" id="message"></div>
-
-        <!-- Dashboard -->
-        <div class="dashboard">
-            <div class="stat-card">
-                <h3>Total Items</h3>
-                <div class="number" id="totalItems">0</div>
+        <!-- KPI Strip -->
+        <div class="kpi-strip">
+            <div class="kpi-tile">
+                <span class="kpi-value" id="totalItems">0</span>
+                <span class="kpi-label">Total</span>
             </div>
-            <div class="stat-card success">
-                <h3>Completed ✓</h3>
-                <div class="number" id="completedItems">0</div>
+            <div class="kpi-divider"></div>
+            <div class="kpi-tile kpi-success">
+                <span class="kpi-value" id="completedItems">0</span>
+                <span class="kpi-label">Completed</span>
             </div>
-            <div class="stat-card warning">
-                <h3>Delayed ⚠</h3>
-                <div class="number" id="delayedItems">0</div>
+            <div class="kpi-divider"></div>
+            <div class="kpi-tile kpi-warning">
+                <span class="kpi-value" id="delayedItems">0</span>
+                <span class="kpi-label">Delayed</span>
             </div>
-            <div class="stat-card">
-                <h3>In Progress</h3>
-                <div class="number" id="inProgressItems">0</div>
+            <div class="kpi-divider"></div>
+            <div class="kpi-tile kpi-info">
+                <span class="kpi-value" id="inProgressItems">0</span>
+                <span class="kpi-label">In Progress</span>
             </div>
         </div>
 
-        <!-- Items Table -->
-        <div class="table-wrapper">
-            <table id="itemsTable">
-                <thead>
-                    <tr id="parentHeader" class="parent-header"></tr>
-                    <tr id="childHeader" class="child-header"></tr>
-                </thead>
-                <tbody id="itemsBody"></tbody>
+        <!-- Actions -->
+        <div class="topbar-actions">
+            <button class="btn-action" onclick="app.addNewItem()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New Item
+            </button>
+            <button class="btn-ghost" onclick="document.getElementById('importFile').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Import
+            </button>
+            <input type="file" id="importFile" accept=".xlsx,.xls,.csv" onchange="app.importFromExcel(event)">
+            <button class="btn-ghost" onclick="app.exportToExcel()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export
+            </button>
+            <button class="btn-ghost" onclick="app.openSettings()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                Settings
+            </button>
+        </div>
+    </header>
+
+    <!-- ── Message ────────────────────────────────────── -->
+    <div class="message" id="message"></div>
+
+    <!-- ── Filter Bar ─────────────────────────────────── -->
+    <div class="filter-bar">
+        <div class="filter-bar-left">
+            <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchBox" placeholder="Search items…" onkeyup="app.applyFilters()">
+            </div>
+
+            <div class="filter-group">
+                <label>Status</label>
+                <select id="statusFilter" onchange="app.applyFilters()">
+                    <option value="">All Status</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="delayed">Delayed ⚠</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Project</label>
+                <select id="projectFilter" onchange="app.applyFilters()">
+                    <option value="">All Projects</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Supplier</label>
+                <select id="supplierFilter" onchange="app.applyFilters()">
+                    <option value="">All Suppliers</option>
+                </select>
+            </div>
+
+            <button class="btn-link" onclick="app.clearFilters()">✕ Clear</button>
+        </div>
+
+        <div class="filter-bar-right">
+            <span class="results-count" id="filterResults"></span>
+            <button class="btn-toggle" id="toggleCompletedBtn" onclick="app.toggleHideCompleted()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Hide Completed
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Table ──────────────────────────────────────── -->
+    <div class="table-wrapper">
+        <table id="itemsTable">
+            <thead>
+                <tr id="parentHeader" class="parent-header"></tr>
+                <tr id="childHeader"  class="child-header"></tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+        </table>
+    </div>
+
+</div><!-- /app-shell -->
+
+<!-- ── Add Item Modal ──────────────────────────────── -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>Add New Item</span>
+            <button class="modal-close" onclick="app.closeAddModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <form id="addForm">
+            <div id="formFields"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" onclick="app.closeAddModal()">Cancel</button>
+                <button type="submit" class="btn-action">Add Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── Settings Modal ─────────────────────────────── -->
+<div id="settingsModal" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <span>System Settings</span>
+            <button class="modal-close" onclick="app.closeSettings()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <div class="settings-tabs">
+            <button class="settings-tab-btn active" onclick="app.switchSettingsTab('fields')">Item Columns</button>
+            <button class="settings-tab-btn" onclick="app.switchSettingsTab('stages')">Supply Chain Stages</button>
+        </div>
+
+        <div id="fieldsTab" class="settings-tab-content active">
+            <p class="settings-note">⚠ Columns are fixed and cannot be modified.</p>
+            <table class="settings-table">
+                <thead><tr><th>Column</th><th>Field ID</th><th>Required</th></tr></thead>
+                <tbody id="fieldsTableBody"></tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Add Item Modal -->
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">Add New Item</div>
-            <form id="addForm">
-                <div id="formFields"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="app.closeAddModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Add Item</button>
-                </div>
-            </form>
+        <div id="stagesTab" class="settings-tab-content">
+            <p class="settings-note">⚠ Stages are fixed and cannot be modified.</p>
+            <table class="settings-table">
+                <thead><tr><th>Stage Name</th><th>ID</th></tr></thead>
+                <tbody id="stagesTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-action" onclick="app.closeSettings()">Done</button>
         </div>
     </div>
+</div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">System Settings</div>
-
-            <div class="settings-tabs">
-                <button class="settings-tab-btn active" onclick="app.switchSettingsTab('fields')">Item Columns</button>
-                <button class="settings-tab-btn" onclick="app.switchSettingsTab('stages')">Supply Chain Stages</button>
-            </div>
-
-            <!-- Fields Settings -->
-            <div id="fieldsTab" class="settings-tab-content active">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0;">Item columns (fixed)</h3>
-                    <p style="color: #6b7280; font-size: 13px;">⚠️ Columns are fixed and cannot be changed.</p>
-                </div>
-                <table class="settings-table">
-                    <thead>
-                        <tr>
-                            <th>Column Name</th>
-                            <th>Field ID</th>
-                            <th>Required</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fieldsTableBody"></tbody>
-                </table>
-            </div>
-
-            <!-- Stages Settings -->
-            <div id="stagesTab" class="settings-tab-content">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0;">Supply chain stages (fixed)</h3>
-                    <p style="color: #6b7280; font-size: 13px;">⚠️ Stages are fixed and cannot be changed.</p>
-                </div>
-                <table class="settings-table">
-                    <thead>
-                        <tr>
-                            <th>Stage Name</th>
-                            <th>ID</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stagesTableBody"></tbody>
-                </table>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="app.closeSettings()">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
-    <script src="assets/js/app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+<script src="assets/js/app.js"></script>
 </body>
 </html>

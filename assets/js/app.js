@@ -1,35 +1,35 @@
 
 const DEFAULT_FIELDS = [
-    { id: 'serialNumber', name: '#', required: false, type: 'auto' },
-    { id: 'partNumber', name: 'P/N', required: true, type: 'text' },
-    { id: 'revision', name: 'REV', required: false, type: 'text' },
-    { id: 'quantity', name: 'Qty', required: false, type: 'number' },
-    { id: 'project', name: 'Project', required: true, type: 'text' },
-    { id: 'pd', name: 'Purchase Req.', required: false, type: 'date' },
-    { id: 'poNumber', name: 'PO #', required: false, type: 'text' },
-    { id: 'po', name: 'PO Date', required: false, type: 'date' },
-    { id: 'supplier', name: 'Supplier', required: false, type: 'text' },
-    { id: 'wd', name: 'Working Days', required: false, type: 'number' },
-    { id: 'notes', name: 'Notes', required: false, type: 'textarea' }
+    { id: 'serialNumber',  name: '#',               required: false, type: 'auto'     },
+    { id: 'partNumber',    name: 'P/N',              required: true,  type: 'text'     },
+    { id: 'revision',      name: 'REV',              required: false, type: 'text'     },
+    { id: 'quantity',      name: 'Qty',              required: false, type: 'number'   },
+    { id: 'project',       name: 'Project',          required: true,  type: 'text'     },
+    { id: 'pd',            name: 'Purchase Req.',    required: false, type: 'date'     },
+    { id: 'poNumber',      name: 'PO #',             required: false, type: 'text'     },
+    { id: 'po',            name: 'PO Date',          required: false, type: 'date'     },
+    { id: 'supplier',      name: 'Supplier',         required: false, type: 'text'     },
+    { id: 'wd',            name: 'Working Days',     required: false, type: 'number'   },
+    { id: 'notes',         name: 'Notes',            required: false, type: 'textarea' }
 ];
 
 const DEFAULT_STAGES = [
-    { id: 'eq', name: 'EQ', key: 'eqDate', completedKey: 'eqCompleted' },
-    { id: 'coc', name: 'COC', key: 'cocDate', completedKey: 'cocCompleted' },
-    { id: 'arrival', name: 'Arrival Date', key: 'arrivalDate', completedKey: 'arrivalCompleted' },
-    { id: 'tracing', name: 'Tracing #', key: 'tracingNumber', type: 'text' },
-    { id: 'hslwh', name: 'HSL WH', key: 'hslwhDate', completedKey: 'hslwhCompleted' }
+    { id: 'eq',      name: 'EQ',           key: 'eqDate',       completedKey: 'eqCompleted'      },
+    { id: 'coc',     name: 'COC',          key: 'cocDate',      completedKey: 'cocCompleted'     },
+    { id: 'arrival', name: 'Arrival Date', key: 'arrivalDate',  completedKey: 'arrivalCompleted' },
+    { id: 'tracing', name: 'Tracing #',    key: 'tracingNumber', type: 'text'                    },
+    { id: 'hslwh',   name: 'HSL WH',       key: 'hslwhDate',   completedKey: 'hslwhCompleted'   }
 ];
 
 const app = {
     items: [],
-    filteredItems: [],
-    currentSort: null,
     fields: [],
     stages: [],
     hideCompleted: false,
     useApi: false,
+    currentSort: { col: null, dir: 'asc', isStage: false },
 
+    /* ── Init ─────────────────────────────────────────────── */
     async init() {
         this.loadSettings();
         await this.loadItems();
@@ -45,15 +45,20 @@ const app = {
         this.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
     },
 
+    setupEventListeners() {
+        document.getElementById('addForm').addEventListener('submit', e => {
+            e.preventDefault();
+            this.saveNewItem();
+        });
+    },
+
+    /* ── Settings ─────────────────────────────────────────── */
     openSettings() {
         this.renderFieldsSettings();
         this.renderStagesSettings();
         document.getElementById('settingsModal').classList.add('show');
     },
-
-    closeSettings() {
-        document.getElementById('settingsModal').classList.remove('show');
-    },
+    closeSettings() { document.getElementById('settingsModal').classList.remove('show'); },
 
     switchSettingsTab(tab) {
         document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
@@ -64,38 +69,19 @@ const app = {
 
     renderFieldsSettings() {
         const tbody = document.getElementById('fieldsTableBody');
-        tbody.innerHTML = '';
-        this.fields.forEach(field => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${field.name}</td>
-                <td>${field.id}</td>
-                <td>${field.required ? '✓' : '—'}</td>
-            `;
-            tbody.appendChild(row);
-        });
+        tbody.innerHTML = this.fields.map(f =>
+            `<tr><td>${f.name}</td><td>${f.id}</td><td>${f.required ? '✓' : '—'}</td></tr>`
+        ).join('');
     },
 
     renderStagesSettings() {
         const tbody = document.getElementById('stagesTableBody');
-        tbody.innerHTML = '';
-        this.stages.forEach(stage => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${stage.name}</td>
-                <td>${stage.id}</td>
-            `;
-            tbody.appendChild(row);
-        });
+        tbody.innerHTML = this.stages.map(s =>
+            `<tr><td>${s.name}</td><td>${s.id}</td></tr>`
+        ).join('');
     },
 
-    setupEventListeners() {
-        document.getElementById('addForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveNewItem();
-        });
-    },
-
+    /* ── Add Item ─────────────────────────────────────────── */
     addNewItem() {
         this.generateAddItemForm();
         document.getElementById('addForm').reset();
@@ -105,12 +91,13 @@ const app = {
     generateAddItemForm() {
         const container = document.getElementById('formFields');
         container.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.className = 'form-grid';
 
         this.fields.forEach(field => {
-            if (field.type === 'auto') return; // serial number is auto, skip
-
+            if (field.type === 'auto') return;
             const group = document.createElement('div');
-            group.className = 'form-group';
+            group.className = field.type === 'textarea' ? 'form-group form-group-full' : 'form-group';
 
             const label = document.createElement('label');
             label.textContent = field.name + (field.required ? ' *' : '');
@@ -119,65 +106,47 @@ const app = {
             let input;
             if (field.type === 'textarea') {
                 input = document.createElement('textarea');
-                input.id = field.id;
                 input.rows = 2;
             } else {
                 input = document.createElement('input');
-                input.type = field.type === 'number' ? 'number' : (field.type === 'date' ? 'date' : 'text');
-                input.id = field.id;
+                input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
                 if (field.type === 'number') input.min = '0';
             }
-
+            input.id = field.id;
             if (field.required) input.required = true;
             group.appendChild(input);
-            container.appendChild(group);
+            grid.appendChild(group);
         });
+
+        container.appendChild(grid);
     },
 
-    closeAddModal() {
-        document.getElementById('addModal').classList.remove('show');
-    },
+    closeAddModal() { document.getElementById('addModal').classList.remove('show'); },
 
     getNextSerial() {
-        if (this.items.length === 0) return 1;
-        const maxSerial = Math.max(...this.items.map(i => parseInt(i.serialNumber) || 0));
-        return maxSerial + 1;
+        if (!this.items.length) return 1;
+        return Math.max(...this.items.map(i => parseInt(i.serialNumber) || 0)) + 1;
     },
 
     async saveNewItem() {
-        const item = {
-            id: String(Date.now()),
-            serialNumber: this.getNextSerial(),
-            createdAt: new Date().toISOString()
-        };
+        const item = { id: String(Date.now()), serialNumber: this.getNextSerial(), createdAt: new Date().toISOString() };
+        let valid = true;
 
-        let isValid = true;
         this.fields.forEach(field => {
             if (field.type === 'auto') return;
             const input = document.getElementById(field.id);
             if (!input) return;
             const value = input.value.trim();
-            if (field.required && !value) {
-                input.classList.add('error');
-                isValid = false;
-            } else {
-                input.classList.remove('error');
-                item[field.id] = field.type === 'number' ? (parseFloat(value) || 0) : value;
-            }
+            if (field.required && !value) { input.classList.add('error'); valid = false; return; }
+            input.classList.remove('error');
+            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0) : value;
         });
 
-        if (!isValid) {
-            this.showMessage('Please fill in all required fields.', 'error');
-            return;
-        }
+        if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
 
         this.stages.forEach(stage => {
-            if (stage.type === 'text') {
-                item[stage.key] = '';
-            } else {
-                item[stage.key] = '';
-                item[stage.completedKey] = false;
-            }
+            item[stage.key] = '';
+            if (stage.completedKey) item[stage.completedKey] = false;
         });
 
         this.items.push(item);
@@ -187,47 +156,43 @@ const app = {
         this.showMessage('Item added successfully!', 'success');
     },
 
+    /* ── Update ───────────────────────────────────────────── */
     async updateStageDate(itemId, stageKey, dateValue) {
         const item = this.items.find(i => i.id === itemId);
-        if (item) {
-            item[stageKey] = dateValue;
-            await this.saveItems();
-            this.renderItems();
-        }
+        if (!item) return;
+        item[stageKey] = dateValue;
+        await this.saveItems();
+        this.renderItems();
     },
 
     async updateStageStatus(itemId, dateKey, completedKey, checked) {
         const item = this.items.find(i => i.id === itemId);
-        if (item) {
-            item[completedKey] = checked;
-            item[dateKey] = checked ? new Date().toISOString().split('T')[0] : '';
-            await this.saveItems();
-            this.renderItems();
-        }
+        if (!item) return;
+        item[completedKey] = checked;
+        item[dateKey] = checked ? new Date().toISOString().split('T')[0] : '';
+        await this.saveItems();
+        this.renderItems();
     },
 
     async updateTracingNumber(itemId, key, value) {
         const item = this.items.find(i => i.id === itemId);
-        if (item) {
-            item[key] = value;
-            await this.saveItems();
-        }
+        if (!item) return;
+        item[key] = value;
+        await this.saveItems();
     },
 
     async deleteItem(itemId) {
-        if (confirm('Delete this item?')) {
-            if (this.useApi) {
-                try {
-                    await fetch(`/api/items?id=${itemId}`, { method: 'DELETE' });
-                } catch (e) { /* fall through to local delete */ }
-            }
-            this.items = this.items.filter(i => i.id !== itemId);
-            await this.saveItems();
-            this.renderItems();
-            this.showMessage('Item deleted.', 'success');
+        if (!confirm('Permanently delete this item?')) return;
+        if (this.useApi) {
+            try { await fetch(`/api/items?id=${itemId}`, { method: 'DELETE' }); } catch (e) {}
         }
+        this.items = this.items.filter(i => i.id !== itemId);
+        await this.saveItems();
+        this.renderItems();
+        this.showMessage('Item deleted.', 'success');
     },
 
+    /* ── Calculations ─────────────────────────────────────── */
     calculateQuotationDate(poDate, wd) {
         if (!poDate || !wd || isNaN(parseInt(wd))) return '';
         const date = new Date(poDate);
@@ -239,249 +204,292 @@ const app = {
         return date.toISOString().split('T')[0];
     },
 
-    formatDate(dateStr) {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        if (isNaN(d)) return dateStr;
-        return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
-    },
-
     calculateDaysBetween(d1, d2) {
         if (!d1 || !d2) return null;
-        const a = new Date(d1); a.setHours(0, 0, 0, 0);
-        const b = new Date(d2); b.setHours(0, 0, 0, 0);
+        const a = new Date(d1); a.setHours(0,0,0,0);
+        const b = new Date(d2); b.setHours(0,0,0,0);
         if (isNaN(a) || isNaN(b)) return null;
         return Math.round((b - a) / 86400000);
     },
 
+    formatDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return isNaN(d) ? dateStr : d.toLocaleDateString('en-GB');
+    },
+
     isArrivalDelayed(item) {
         if (!item.arrivalDate || item.hslwhCompleted) return false;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const arrival = new Date(item.arrivalDate); arrival.setHours(0, 0, 0, 0);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
         return today > arrival;
     },
 
+    /* ── Filtering ────────────────────────────────────────── */
+    getDisplayItems() {
+        const search   = (document.getElementById('searchBox')?.value   || '').toLowerCase().trim();
+        const status   = document.getElementById('statusFilter')?.value   || '';
+        const project  = document.getElementById('projectFilter')?.value  || '';
+        const supplier = document.getElementById('supplierFilter')?.value || '';
+
+        return this.items.filter(item => {
+            if (this.hideCompleted && item.hslwhCompleted) return false;
+            if (status === 'completed'  && !item.hslwhCompleted)            return false;
+            if (status === 'in-progress' && item.hslwhCompleted)            return false;
+            if (status === 'delayed'    && !this.isArrivalDelayed(item))    return false;
+            if (project  && item.project  !== project)                      return false;
+            if (supplier && item.supplier !== supplier)                     return false;
+            if (search) {
+                const hit = this.fields.some(f => {
+                    const v = item[f.id];
+                    return v && String(v).toLowerCase().includes(search);
+                }) || this.stages.some(s => {
+                    const v = item[s.key];
+                    return v && String(v).toLowerCase().includes(search);
+                });
+                if (!hit) return false;
+            }
+            return true;
+        });
+    },
+
+    applyFilters() { this.renderItems(); },
+
+    clearFilters() {
+        document.getElementById('searchBox').value    = '';
+        document.getElementById('statusFilter').value   = '';
+        document.getElementById('projectFilter').value  = '';
+        document.getElementById('supplierFilter').value = '';
+        this.hideCompleted = false;
+        const btn = document.getElementById('toggleCompletedBtn');
+        btn.classList.remove('active');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Hide Completed';
+        this.renderItems();
+    },
+
+    populateFilterDropdowns() {
+        const projects  = [...new Set(this.items.map(i => i.project).filter(Boolean))].sort();
+        const suppliers = [...new Set(this.items.map(i => i.supplier).filter(Boolean))].sort();
+
+        const pSel = document.getElementById('projectFilter');
+        const sSel = document.getElementById('supplierFilter');
+        if (!pSel || !sSel) return;
+
+        const pVal = pSel.value;
+        const sVal = sSel.value;
+
+        pSel.innerHTML = '<option value="">All Projects</option>' +
+            projects.map(p => `<option value="${p}"${p === pVal ? ' selected' : ''}>${p}</option>`).join('');
+        sSel.innerHTML = '<option value="">All Suppliers</option>' +
+            suppliers.map(s => `<option value="${s}"${s === sVal ? ' selected' : ''}>${s}</option>`).join('');
+    },
+
+    toggleHideCompleted() {
+        this.hideCompleted = !this.hideCompleted;
+        const btn = document.getElementById('toggleCompletedBtn');
+        const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        if (this.hideCompleted) {
+            btn.classList.add('active');
+            btn.innerHTML = `${eyeIcon} Show Completed`;
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = `${eyeIcon} Hide Completed`;
+        }
+        this.renderItems();
+    },
+
+    /* ── Sort ─────────────────────────────────────────────── */
+    sortByColumn(col) {
+        const isAsc = !(this.currentSort.col === col && !this.currentSort.isStage && this.currentSort.dir === 'asc');
+        this.currentSort = { col, dir: isAsc ? 'asc' : 'desc', isStage: false };
+
+        this.items.sort((a, b) => {
+            let av = a[col] ?? '', bv = b[col] ?? '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(String(av))) {
+                av = new Date(av).getTime() || 0;
+                bv = new Date(bv).getTime() || 0;
+                return isAsc ? av - bv : bv - av;
+            }
+            av = String(av).toLowerCase();
+            bv = String(bv).toLowerCase();
+            return isAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+        });
+
+        this.renderParentHeader();
+        this.renderItems();
+    },
+
+    sortByStageKey(stageKey) {
+        const isAsc = !(this.currentSort.col === stageKey && this.currentSort.isStage && this.currentSort.dir === 'asc');
+        this.currentSort = { col: stageKey, dir: isAsc ? 'asc' : 'desc', isStage: true };
+
+        this.items.sort((a, b) => {
+            const ad = a[stageKey] || '', bd = b[stageKey] || '';
+            if (!ad && bd) return isAsc ? 1 : -1;
+            if (ad && !bd) return isAsc ? -1 : 1;
+            if (!ad && !bd) return 0;
+            const diff = new Date(ad) - new Date(bd);
+            return isAsc ? diff : -diff;
+        });
+
+        this.renderParentHeader();
+        this.renderItems();
+    },
+
+    getSortIcon(col, isStage) {
+        const active = this.currentSort.col === col && this.currentSort.isStage === isStage;
+        if (!active) return '<span class="sort-icon">↕</span>';
+        return `<span class="sort-icon active">${this.currentSort.dir === 'asc' ? '↑' : '↓'}</span>`;
+    },
+
+    /* ── Render Header ────────────────────────────────────── */
+    renderParentHeader() {
+        const parentRow = document.getElementById('parentHeader');
+        const childRow  = document.getElementById('childHeader');
+
+        const itemCols   = this.fields.length + 1; // +1 Quot. Date
+        const supplyCols = this.stages.length + 1; // +1 Actions
+
+        parentRow.innerHTML =
+            `<th colspan="${itemCols}"   class="parent-header-cell">Item Details</th>` +
+            `<th colspan="${supplyCols}" class="parent-header-cell">Supply Chain</th>`;
+
+        let ch = '';
+        this.fields.forEach((field, i) => {
+            const sticky = i === 0 ? 'sticky-col sticky-col-1' : i === 1 ? 'sticky-col sticky-col-2' : '';
+            ch += `<th class="sortable child-th ${sticky}" onclick="app.sortByColumn('${field.id}')">
+                       ${field.name}${this.getSortIcon(field.id, false)}
+                   </th>`;
+        });
+        ch += `<th class="child-th">Quot. Date</th>`;
+        this.stages.forEach(stage => {
+            ch += `<th class="sortable stage-header child-th" onclick="app.sortByStageKey('${stage.key}')">
+                       ${stage.name}${this.getSortIcon(stage.key, true)}
+                   </th>`;
+        });
+        ch += `<th class="child-th actions-th">Actions</th>`;
+        childRow.innerHTML = ch;
+
+        requestAnimationFrame(() => {
+            const ph = parentRow.getBoundingClientRect().height;
+            childRow.querySelectorAll('th').forEach(th => { th.style.top = ph + 'px'; });
+        });
+    },
+
+    /* ── Render Items ─────────────────────────────────────── */
     renderItems() {
         this.updateDashboard();
+        this.populateFilterDropdowns();
+
         const tbody = document.getElementById('itemsBody');
         tbody.innerHTML = '';
 
-        const itemsToRender = this.filteredItems.length > 0 ? this.filteredItems : [...this.items];
+        const items = this.getDisplayItems();
 
-        itemsToRender.forEach(item => {
+        // Results count
+        const rc = document.getElementById('filterResults');
+        if (rc) rc.textContent = items.length === this.items.length
+            ? `${this.items.length} items`
+            : `${items.length} of ${this.items.length} items`;
+
+        items.forEach(item => {
             const row = document.createElement('tr');
             if (this.isArrivalDelayed(item)) row.classList.add('row-delayed');
+            if (item.hslwhCompleted)          row.classList.add('row-completed');
 
             let html = '';
 
-            // Item detail fields
-            this.fields.forEach((field, index) => {
-                const sticky = index === 0 ? 'sticky-col sticky-col-1' : index === 1 ? 'sticky-col sticky-col-2' : '';
+            this.fields.forEach((field, i) => {
+                const sticky = i === 0 ? 'sticky-col sticky-col-1' : i === 1 ? 'sticky-col sticky-col-2' : '';
 
                 if (field.id === 'serialNumber') {
-                    html += `<td class="${sticky}"><strong>${item.serialNumber || ''}</strong></td>`;
+                    html += `<td class="${sticky} col-serial">${item.serialNumber || ''}</td>`;
 
                 } else if (field.id === 'pd') {
                     html += `<td class="${sticky}">${this.formatDate(item.pd)}</td>`;
 
                 } else if (field.id === 'po') {
-                    // Show PO date + days elapsed from Purchase Req.
-                    const daysToPO = this.calculateDaysBetween(item.pd, item.po);
-                    const badge = daysToPO !== null
-                        ? `<span class="days-badge">${daysToPO}d from PR</span>`
-                        : '';
+                    const d = this.calculateDaysBetween(item.pd, item.po);
                     html += `<td class="${sticky}">
-                        <div class="date-with-badge">${this.formatDate(item.po)}${badge}</div>
-                    </td>`;
+                        <div class="date-with-badge">
+                            <span>${this.formatDate(item.po)}</span>
+                            ${d !== null ? `<span class="days-badge">${d}d from PR</span>` : ''}
+                        </div></td>`;
 
                 } else {
                     html += `<td class="${sticky}">${item[field.id] ?? ''}</td>`;
                 }
             });
 
-            // Calculated Quotation Date column
+            // Quot. Date
             const quotDate = this.calculateQuotationDate(item.po, item.wd);
-            html += `<td>${this.formatDate(quotDate)}</td>`;
+            html += `<td class="col-date">${this.formatDate(quotDate)}</td>`;
 
-            // Stage columns
+            // Stages
             this.stages.forEach(stage => {
                 if (stage.type === 'text') {
-                    const val = item[stage.key] || '';
-                    html += `
-                        <td>
-                            <input type="text" class="tracing-input"
-                                value="${val.replace(/"/g, '&quot;')}"
-                                placeholder="—"
-                                onchange="app.updateTracingNumber('${item.id}', '${stage.key}', this.value)">
-                        </td>`;
+                    const val = (item[stage.key] || '').replace(/"/g, '&quot;');
+                    html += `<td><input type="text" class="tracing-input" value="${val}" placeholder="—"
+                                 onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)"></td>`;
                 } else {
-                    const dateVal = item[stage.key] || '';
+                    const dateVal    = item[stage.key] || '';
                     const isCompleted = item[stage.completedKey] || false;
-
-                    // HSL WH: also show days from PO to receipt
-                    let extraBadge = '';
+                    let badge = '';
                     if (stage.id === 'hslwh') {
-                        const daysFromPO = this.calculateDaysBetween(item.po, dateVal);
-                        if (daysFromPO !== null) {
-                            extraBadge = `<span class="days-badge">${daysFromPO}d from PO</span>`;
-                        }
+                        const d = this.calculateDaysBetween(item.po, dateVal);
+                        if (d !== null) badge = `<span class="days-badge">${d}d from PO</span>`;
                     }
-
-                    html += `
-                        <td>
-                            <div class="stage-cell">
-                                <input type="checkbox" class="stage-checkbox"
-                                    ${isCompleted ? 'checked' : ''}
-                                    onchange="app.updateStageStatus('${item.id}', '${stage.key}', '${stage.completedKey}', this.checked)">
-                                <input type="date" class="stage-date-input"
-                                    value="${dateVal}"
-                                    onchange="app.updateStageDate('${item.id}', '${stage.key}', this.value)">
-                                ${extraBadge}
-                            </div>
-                        </td>`;
+                    const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
+                    html += `<td>
+                        <div class="${completedClass}">
+                            <input type="checkbox" class="stage-checkbox" ${isCompleted ? 'checked' : ''}
+                                onchange="app.updateStageStatus('${item.id}','${stage.key}','${stage.completedKey}',this.checked)">
+                            <input type="date" class="stage-date-input" value="${dateVal}"
+                                onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
+                            ${badge}
+                        </div></td>`;
                 }
             });
 
-            // Actions
-            html += `
-                <td class="action-buttons">
-                    <button class="btn-danger" onclick="app.deleteItem('${item.id}')" title="Delete">🗑️</button>
-                </td>`;
+            html += `<td class="action-col">
+                <button class="btn-icon-danger" onclick="app.deleteItem('${item.id}')" title="Delete item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                </button>
+            </td>`;
 
             row.innerHTML = html;
             tbody.appendChild(row);
         });
     },
 
+    /* ── Dashboard ────────────────────────────────────────── */
     updateDashboard() {
-        const total = this.items.length;
+        const total     = this.items.length;
         const completed = this.items.filter(i => i.hslwhCompleted).length;
-        const delayed = this.items.filter(i => this.isArrivalDelayed(i)).length;
+        const delayed   = this.items.filter(i => this.isArrivalDelayed(i)).length;
         const inProgress = total - completed;
 
-        document.getElementById('totalItems').textContent = total;
+        document.getElementById('totalItems').textContent    = total;
         document.getElementById('completedItems').textContent = completed;
-        document.getElementById('delayedItems').textContent = delayed;
+        document.getElementById('delayedItems').textContent   = delayed;
         document.getElementById('inProgressItems').textContent = inProgress;
     },
 
-    filterItems() {
-        const searchText = document.getElementById('searchBox').value.toLowerCase();
-        this.filteredItems = this.items.filter(item => {
-            if (this.hideCompleted && item.hslwhCompleted) return false;
-            if (!searchText) return true;
-            return this.fields.some(field => {
-                const val = item[field.id];
-                return val && String(val).toLowerCase().includes(searchText);
-            });
-        });
-        this.renderItems();
-    },
-
-    toggleHideCompleted() {
-        this.hideCompleted = !this.hideCompleted;
-        const btn = document.getElementById('toggleCompletedBtn');
-        if (this.hideCompleted) {
-            btn.classList.add('active');
-            btn.textContent = '👁 Show Completed';
-        } else {
-            btn.classList.remove('active');
-            btn.textContent = '👁 Hide Completed';
-        }
-        this.filterItems();
-    },
-
-    sortByColumn(column) {
-        const isAsc = this.currentSort !== `${column}-asc`;
-        this.currentSort = isAsc ? `${column}-asc` : `${column}-desc`;
-
-        this.items.sort((a, b) => {
-            let aVal = a[column] || '';
-            let bVal = b[column] || '';
-            if (/^\d{4}-\d{2}-\d{2}$/.test(aVal)) {
-                aVal = new Date(aVal).getTime() || 0;
-                bVal = new Date(bVal).getTime() || 0;
-            } else if (typeof aVal === 'string') {
-                aVal = aVal.toLowerCase();
-                bVal = (bVal || '').toLowerCase();
-            }
-            return isAsc ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
-        });
-
-        this.filteredItems = [];
-        this.renderItems();
-    },
-
-    sortByStageKey(stageKey) {
-        const isAsc = this.currentSort !== `stage-${stageKey}-asc`;
-        this.currentSort = isAsc ? `stage-${stageKey}-asc` : `stage-${stageKey}-desc`;
-
-        this.items.sort((a, b) => {
-            const aDate = a[stageKey] || '';
-            const bDate = b[stageKey] || '';
-            if (!aDate && bDate) return isAsc ? 1 : -1;
-            if (aDate && !bDate) return isAsc ? -1 : 1;
-            if (!aDate && !bDate) return 0;
-            const diff = new Date(aDate) - new Date(bDate);
-            return isAsc ? diff : -diff;
-        });
-
-        this.filteredItems = [];
-        this.renderItems();
-    },
-
-    renderParentHeader() {
-        const parentRow = document.getElementById('parentHeader');
-        const childRow = document.getElementById('childHeader');
-
-        // fields.length columns + 1 calculated Quotation Date column
-        const itemColCount = this.fields.length + 1;
-        // stages + 1 actions column
-        const supplyColCount = this.stages.length + 1;
-
-        parentRow.innerHTML =
-            `<th colspan="${itemColCount}" class="parent-header-cell">Item Details</th>` +
-            `<th colspan="${supplyColCount}" class="parent-header-cell">Supply Chain</th>`;
-
-        let childHtml = '';
-        this.fields.forEach((field, index) => {
-            const sticky = index === 0 ? 'sticky-col sticky-col-1' : index === 1 ? 'sticky-col sticky-col-2' : '';
-            childHtml += `<th class="sortable child-th ${sticky}" onclick="app.sortByColumn('${field.id}')">${field.name}</th>`;
-        });
-        // Calculated column
-        childHtml += `<th class="child-th">Quot. Date</th>`;
-
-        this.stages.forEach(stage => {
-            const sortKey = stage.type === 'text' ? stage.key : stage.key;
-            childHtml += `<th class="sortable stage-header child-th" onclick="app.sortByStageKey('${sortKey}')">${stage.name}</th>`;
-        });
-        childHtml += `<th class="child-th">Actions</th>`;
-        childRow.innerHTML = childHtml;
-
-        requestAnimationFrame(() => {
-            const parentHeight = parentRow.getBoundingClientRect().height;
-            childRow.querySelectorAll('th').forEach(th => {
-                th.style.top = parentHeight + 'px';
-            });
-        });
-    },
-
+    /* ── Export / Import ──────────────────────────────────── */
     exportToExcel() {
         const data = this.items.map(item => {
             const row = {};
-            this.fields.forEach(field => {
-                row[field.name] = item[field.id] ?? '';
-            });
+            this.fields.forEach(f => { row[f.name] = item[f.id] ?? ''; });
             row['Quot. Date'] = this.calculateQuotationDate(item.po, item.wd);
-            this.stages.forEach(stage => {
-                row[stage.name] = item[stage.key] || '';
-                if (stage.completedKey) {
-                    row[stage.name + ' (Done)'] = item[stage.completedKey] ? 'Yes' : 'No';
-                }
+            this.stages.forEach(s => {
+                row[s.name] = item[s.key] || '';
+                if (s.completedKey) row[s.name + ' Done'] = item[s.completedKey] ? 'Yes' : 'No';
             });
             return row;
         });
-
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Items');
@@ -493,32 +501,19 @@ const app = {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = async e => {
             try {
-                const wb = XLSX.read(e.target.result, { type: 'binary' });
-                const sheet = wb.Sheets[wb.SheetNames[0]];
-                const data = XLSX.utils.sheet_to_json(sheet);
-
+                const wb   = XLSX.read(e.target.result, { type: 'binary' });
+                const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 data.forEach(row => {
-                    const item = {
-                        id: String(Date.now() + Math.random()),
-                        serialNumber: this.getNextSerial(),
-                        createdAt: new Date().toISOString()
-                    };
-                    this.fields.forEach(field => {
-                        if (field.type !== 'auto') {
-                            item[field.id] = row[field.name] || '';
-                        }
-                    });
-                    this.stages.forEach(stage => {
-                        item[stage.key] = row[stage.name] || '';
-                        if (stage.completedKey) {
-                            item[stage.completedKey] = row[stage.name + ' (Done)'] === 'Yes';
-                        }
+                    const item = { id: String(Date.now() + Math.random()), serialNumber: this.getNextSerial(), createdAt: new Date().toISOString() };
+                    this.fields.forEach(f => { if (f.type !== 'auto') item[f.id] = row[f.name] || ''; });
+                    this.stages.forEach(s => {
+                        item[s.key] = row[s.name] || '';
+                        if (s.completedKey) item[s.completedKey] = row[s.name + ' Done'] === 'Yes';
                     });
                     this.items.push(item);
                 });
-
                 await this.saveItems();
                 this.renderItems();
                 this.showMessage(`${data.length} item(s) imported!`, 'success');
@@ -531,25 +526,20 @@ const app = {
         reader.readAsBinaryString(file);
     },
 
+    /* ── Persistence ──────────────────────────────────────── */
     showMessage(text, type) {
         const msg = document.getElementById('message');
         msg.textContent = text;
         msg.className = `message ${type}`;
-        setTimeout(() => { msg.className = 'message'; }, 3000);
+        setTimeout(() => { msg.className = 'message'; }, 3500);
     },
 
     async saveItems() {
         if (this.useApi) {
             try {
-                await fetch('/api/items', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.items)
-                });
+                await fetch('/api/items', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.items) });
                 return;
-            } catch (e) {
-                console.warn('API save failed, using localStorage', e);
-            }
+            } catch (e) { console.warn('API save failed, using localStorage', e); }
         }
         localStorage.setItem('po_items_v2', JSON.stringify(this.items));
     },
@@ -558,14 +548,8 @@ const app = {
         if (window.location.protocol !== 'file:') {
             try {
                 const res = await fetch('/api/items');
-                if (res.ok) {
-                    this.items = await res.json();
-                    this.useApi = true;
-                    return;
-                }
-            } catch (e) {
-                console.warn('API not available, using localStorage', e);
-            }
+                if (res.ok) { this.items = await res.json(); this.useApi = true; return; }
+            } catch (e) { console.warn('API unavailable, using localStorage'); }
         }
         const data = localStorage.getItem('po_items_v2');
         this.items = data ? JSON.parse(data) : [];
