@@ -17,7 +17,7 @@ const DEFAULT_STAGES = [
     { id: 'promiseDate',name: 'Promise Date',   key: 'promiseDate',   type: 'date'                    },
     { id: 'eq',         name: 'EQ',             key: 'eqDate',        completedKey: 'eqCompleted'      },
     { id: 'coc',        name: 'COC',            key: 'cocDate',       completedKey: 'cocCompleted'     },
-    { id: 'tracing',    name: 'Tracing #',      key: 'tracingNumber', type: 'text'                    },
+    { id: 'tracking',   name: 'Tracking #',     key: 'trackingNumber', type: 'text'                    },
     { id: 'arrival',    name: 'Arrival Date',   key: 'arrivalDate',   completedKey: 'arrivalCompleted' },
     { id: 'hslwh',      name: 'HSL WH',         key: 'hslwhDate',     completedKey: 'hslwhCompleted'  }
 ];
