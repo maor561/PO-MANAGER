@@ -601,10 +601,16 @@ const app = {
                     }
 
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
+                    let clearBtn = '';
+                    if (stage.id === 'promiseDate') {
+                        clearBtn = `<button class="btn-clear" onclick="app.updateStageDate('${item.id}','${stage.key}','')">✕</button>`;
+                    }
+
                     html += `<td>
                         <div class="${completedClass}">
                             <input type="date" class="stage-date-input" value="${dateVal}"
                                 onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
+                            ${clearBtn}
                             ${badge}${historyIndicator}
                         </div></td>`;
                 } else {

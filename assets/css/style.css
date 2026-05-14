@@ -481,6 +481,20 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
 }
 .stage-date-input:focus { outline: none; border-color: var(--primary); background: white; }
 
+.btn-clear {
+    padding: 2px 6px;
+    font-size: 12px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 3px;
+    color: #dc2626;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all .15s;
+    margin-top: 2px;
+}
+.btn-clear:hover { background: #fecaca; border-color: #f87171; }
+
 /* ─── Tracing Input ──────────────────────────────────────────── */
 .tracing-input {
     width: 100%; min-width: 92px;
