@@ -70,15 +70,18 @@ const app = {
 
         suppliers.forEach(supplier => {
             const supplierItems = this.items.filter(i => i.supplier === supplier);
-            const completedItems = supplierItems.filter(i => i.hslwhDate && i.po);
+            const completedItems = supplierItems.filter(i => i.hslwhDate);
 
             let avgDays = '—';
             if (completedItems.length > 0) {
-                const totalDays = completedItems.reduce((sum, item) => {
-                    const d = this.calculateDaysBetween(item.po, item.hslwhDate);
-                    return sum + (d !== null ? d : 0);
-                }, 0);
-                avgDays = (totalDays / completedItems.length).toFixed(1) + ' days';
+                const itemsWithBothDates = completedItems.filter(i => i.po && i.hslwhDate);
+                if (itemsWithBothDates.length > 0) {
+                    const totalDays = itemsWithBothDates.reduce((sum, item) => {
+                        const d = this.calculateDaysBetween(item.po, item.hslwhDate);
+                        return sum + (d !== null ? d : 0);
+                    }, 0);
+                    avgDays = (totalDays / itemsWithBothDates.length).toFixed(1) + ' days';
+                }
             }
 
             const row = `<tr>
