@@ -346,9 +346,9 @@ const app = {
         const supplier = document.getElementById('supplierFilter')?.value || '';
 
         return this.items.filter(item => {
-            if (this.hideCompleted && item.hslwhCompleted) return false;
-            if (status === 'completed'  && !item.hslwhCompleted)            return false;
-            if (status === 'in-progress' && item.hslwhCompleted)            return false;
+            if (this.hideCompleted && item.hslwhDate) return false;
+            if (status === 'completed'  && !item.hslwhDate)            return false;
+            if (status === 'in-progress' && item.hslwhDate)            return false;
             if (status === 'delayed'    && !this.isArrivalDelayed(item))    return false;
             if (project  && item.project  !== project)                      return false;
             if (supplier && item.supplier !== supplier)                     return false;
@@ -508,7 +508,7 @@ const app = {
         items.forEach(item => {
             const row = document.createElement('tr');
             if (this.isArrivalDelayed(item)) row.classList.add('row-delayed');
-            if (item.hslwhCompleted)          row.classList.add('row-completed');
+            if (item.hslwhDate)          row.classList.add('row-completed');
 
             let html = '';
 
@@ -585,7 +585,7 @@ const app = {
     /* ── Dashboard ────────────────────────────────────────── */
     updateDashboard() {
         const total     = this.items.length;
-        const completed = this.items.filter(i => i.hslwhCompleted).length;
+        const completed = this.items.filter(i => i.hslwhDate).length;
         const delayed   = this.items.filter(i => this.isArrivalDelayed(i)).length;
         const inProgress = total - completed;
 
