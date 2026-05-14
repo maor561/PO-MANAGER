@@ -666,11 +666,6 @@ const app = {
 
     /* ── Export / Import ──────────────────────────────────── */
     exportToExcel() {
-        if (typeof XLSX === 'undefined') {
-            this.showMessage('Excel library not loaded. Please refresh the page and try again.', 'error');
-            return;
-        }
-
         try {
             const data = this.items.map(item => {
                 const row = {};
@@ -682,30 +677,63 @@ const app = {
                 });
                 return row;
             });
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Items');
-            XLSX.writeFile(wb, `PO_Items_${new Date().toISOString().split('T')[0]}.xlsx`);
-            this.showMessage('Excel exported successfully!', 'success');
+
+            // Try XLSX if available, fallback to JSON
+            if (typeof XLSX !== 'undefined') {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Items');
+                XLSX.writeFile(wb, `PO_Items_${new Date().toISOString().split('T')[0]}.xlsx`);
+                this.showMessage('Excel exported successfully!', 'success');
+            } else {
+                // Fallback: export as JSON
+                const json = JSON.stringify(data, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PO_Items_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showMessage('Exported as JSON (Excel library unavailable)', 'success');
+            }
         } catch (err) {
-            this.showMessage('Error exporting to Excel: ' + err.message, 'error');
+            this.showMessage('Error exporting: ' + err.message, 'error');
             console.error('Export error:', err);
         }
     },
 
     importFromExcel(event) {
-        if (typeof XLSX === 'undefined') {
-            this.showMessage('Excel library not loaded. Please refresh the page and try again.', 'error');
-            return;
-        }
-
         const file = event.target.files[0];
         if (!file) return;
+
+        const isJson = file.name.endsWith('.json');
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv');
+
         const reader = new FileReader();
         reader.onload = async e => {
             try {
-                const wb   = XLSX.read(e.target.result, { type: 'binary' });
-                const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                let data;
+
+                if (isJson) {
+                    // Parse JSON file
+                    const jsonText = e.target.result;
+                    data = JSON.parse(jsonText);
+                    if (!Array.isArray(data)) {
+                        throw new Error('JSON file must contain an array of items');
+                    }
+                } else if (isExcel) {
+                    // Parse Excel/CSV file
+                    if (typeof XLSX === 'undefined') {
+                        this.showMessage('Excel library unavailable. Try exporting as JSON and re-importing, or refresh the page.', 'error');
+                        return;
+                    }
+                    const wb = XLSX.read(e.target.result, { type: 'binary' });
+                    data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                } else {
+                    throw new Error('Unsupported file format. Use .xlsx, .xls, .csv, or .json');
+                }
+
                 this.items = []; // Clear all existing items
                 data.forEach(row => {
                     const item = { id: String(Date.now() + Math.random()), serialNumber: this.getNextSerial(), createdAt: new Date().toISOString() };
@@ -716,6 +744,7 @@ const app = {
                     });
                     this.items.push(item);
                 });
+
                 await this.saveItems();
                 this.renderItems();
                 this.showMessage(`${data.length} item(s) imported (replaced all data)!`, 'success');
@@ -725,7 +754,12 @@ const app = {
                 console.error('Import error:', err);
             }
         };
-        reader.readAsBinaryString(file);
+
+        if (isJson) {
+            reader.readAsText(file);
+        } else {
+            reader.readAsBinaryString(file);
+        }
     },
 
     /* ── Persistence ──────────────────────────────────────── */
