@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1702000000000,
+    "orderNumber": "PO-001",
+    "date": "2026-01-15",
+    "expectedDeliveryDate": "2026-02-15",
+    "supplier": "ספק א' בע\"מ",
+    "itemName": "מחשב נייד HP",
+    "quantity": 5,
+    "unitPrice": 4500,
+    "stage": 6,
+    "notes": "הזמנה קודמת, הושלמה בהצלחה",
+    "createdAt": "2026-01-15T10:00:00Z"
+  },
+  {
+    "id": 1702000000001,
+    "orderNumber": "PO-002",
+    "date": "2026-02-10",
+    "expectedDeliveryDate": "2026-03-10",
+    "supplier": "ספקי דיגיטל בע\"מ",
+    "itemName": "מדפסות הזרקת דיו",
+    "quantity": 3,
+    "unitPrice": 1200,
+    "stage": 5,
+    "notes": "בקבלה במחסן",
+    "createdAt": "2026-02-10T09:30:00Z"
+  },
+  {
+    "id": 1702000000002,
+    "orderNumber": "PO-003",
+    "date": "2026-03-05",
+    "expectedDeliveryDate": "2026-04-05",
+    "supplier": "עבודות פרזול יבואנים",
+    "itemName": "שולחנות עדכוניים",
+    "quantity": 10,
+    "unitPrice": 850,
+    "stage": 3,
+    "notes": "הזמנה פעילה",
+    "createdAt": "2026-03-05T11:00:00Z"
+  },
+  {
+    "id": 1702000000003,
+    "orderNumber": "PO-004",
+    "date": "2026-03-20",
+    "expectedDeliveryDate": "2026-04-20",
+    "supplier": "ספק חשמל ישראל",
+    "itemName": "כבלים וחוטים חשמליים",
+    "quantity": 100,
+    "unitPrice": 45,
+    "stage": 2,
+    "notes": "בהמתנה לאישור הנהלה",
+    "createdAt": "2026-03-20T14:15:00Z"
+  },
+  {
+    "id": 1702000000004,
+    "orderNumber": "PO-005",
+    "date": "2026-05-01",
+    "expectedDeliveryDate": "2026-06-01",
+    "supplier": "ספקי ריהוט משרדי",
+    "itemName": "כיסאות משרדיים",
+    "quantity": 20,
+    "unitPrice": 650,
+    "stage": 1,
+    "notes": "הזמנה חדשה",
+    "createdAt": "2026-05-01T08:45:00Z"
+  }
+]

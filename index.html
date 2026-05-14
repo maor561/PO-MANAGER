@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PO Manager - Purchase Order Tracking</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 PO Manager</h1>
+            <p>Supply chain tracking from demand to warehouse receipt</p>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="btn-primary" onclick="app.addNewItem()">➕ Add Item</button>
+                <button class="btn-primary" onclick="document.getElementById('importFile').click()">📤 Import Excel</button>
+                <input type="file" id="importFile" accept=".xlsx,.xls,.csv" onchange="app.importFromExcel(event)">
+                <button class="btn-primary" onclick="app.exportToExcel()">📥 Export Excel</button>
+                <button class="btn-primary" onclick="app.openSettings()">⚙️ Settings</button>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn-secondary" id="toggleCompletedBtn" onclick="app.toggleHideCompleted()">👁 Hide Completed</button>
+                <input type="text" id="searchBox" placeholder="Search..." onkeyup="app.filterItems()">
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <!-- Dashboard -->
+        <div class="dashboard">
+            <div class="stat-card">
+                <h3>Total Items</h3>
+                <div class="number" id="totalItems">0</div>
+            </div>
+            <div class="stat-card success">
+                <h3>Completed ✓</h3>
+                <div class="number" id="completedItems">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>In Progress</h3>
+                <div class="number" id="inProgressItems">0</div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="table-wrapper">
+            <table id="itemsTable">
+                <thead>
+                    <tr id="parentHeader" class="parent-header"></tr>
+                    <tr id="childHeader" class="child-header"></tr>
+                </thead>
+                <tbody id="itemsBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Add New Item</div>
+            <form id="addForm">
+                <div id="formFields"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="app.closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">System Settings</div>
+
+            <div class="settings-tabs">
+                <button class="settings-tab-btn active" onclick="app.switchSettingsTab('fields')">Item Columns</button>
+                <button class="settings-tab-btn" onclick="app.switchSettingsTab('stages')">Supply Chain Stages</button>
+            </div>
+
+            <!-- Fields Settings -->
+            <div id="fieldsTab" class="settings-tab-content active">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0;">Item columns (fixed)</h3>
+                    <p style="color: #6b7280; font-size: 13px;">⚠️ Columns are fixed and cannot be changed.</p>
+                </div>
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th>Column Name</th>
+                            <th>Field ID</th>
+                            <th>Required</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fieldsTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Stages Settings -->
+            <div id="stagesTab" class="settings-tab-content">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0;">Supply chain stages (fixed)</h3>
+                    <p style="color: #6b7280; font-size: 13px;">⚠️ Stages are fixed and cannot be changed.</p>
+                </div>
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th>Stage Name</th>
+                            <th>ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stagesTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="app.closeSettings()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

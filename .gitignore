@@ -1,0 +1,37 @@
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node modules (if using any build tools in the future)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Local development files
+.env.local
+.env.*.local
+
+# Exported Excel files
+*.xlsx
+*.xls
+
+# Log files
+*.log
+
+# Temp folders
+temp/
+tmp/
