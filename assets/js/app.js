@@ -602,7 +602,7 @@ const app = {
 
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     let clearBtn = '';
-                    if (stage.id === 'promiseDate') {
+                    if (stage.id === 'promiseDate' && item.promiseDateHistory && item.promiseDateHistory.length > 0) {
                         clearBtn = `<button class="btn-clear" onclick="app.updateStageDate('${item.id}','${stage.key}','')">✕</button>`;
                     }
 
