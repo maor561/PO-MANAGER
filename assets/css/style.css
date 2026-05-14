@@ -408,6 +408,17 @@ tbody tr:nth-child(even) { background: var(--gray-25); }
 tbody tr:hover { background: var(--primary-lt) !important; }
 tbody tr:hover td { border-right-color: rgba(37,99,235,.08); }
 
+/* Row status colors */
+tbody tr.row-completed td              { background: #f0fdf4; }
+tbody tr.row-completed td.sticky-col  { background: #f0fdf4; }
+tbody tr.row-delayed   td              { background: #fef2f2; }
+tbody tr.row-delayed   td.sticky-col  { background: #fef2f2; }
+tbody tr.row-due-soon  td              { background: #fffbeb; }
+tbody tr.row-due-soon  td.sticky-col  { background: #fffbeb; }
+tbody tr.row-completed:hover td, tbody tr.row-completed:hover td.sticky-col { background: #dcfce7 !important; }
+tbody tr.row-delayed:hover   td, tbody tr.row-delayed:hover   td.sticky-col { background: #fee2e2 !important; }
+tbody tr.row-due-soon:hover  td, tbody tr.row-due-soon:hover  td.sticky-col { background: #fef3c7 !important; }
+
 /* Sticky td backgrounds */
 tbody tr td.sticky-col-1,
 tbody tr td.sticky-col-2 { background: inherit; }
@@ -766,6 +777,45 @@ input[type="file"] { display: none; }
 @media (max-width: 900px) {
     .dash-kpi-row { grid-template-columns: repeat(2, 1fr); }
     .dash-charts-row { grid-template-columns: 1fr; }
+}
+
+/* ─── Notes cell ────────────────────────────────────────────── */
+.notes-cell {
+    display: inline-block; max-width: 120px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--gray-600); font-style: italic; font-size: 12px;
+}
+
+/* ─── Refresh Indicator ──────────────────────────────────────── */
+.refresh-indicator {
+    font-size: 11px; font-weight: 600; color: #4ade80;
+    opacity: 0; transition: opacity .4s;
+    pointer-events: none;
+}
+.refresh-indicator.active { opacity: 1; }
+
+/* ─── Print Styles ───────────────────────────────────────────── */
+@media print {
+    body { background: white !important; font-size: 11px; }
+    .topbar, .view-tabs, .filter-bar, .message,
+    .btn-action, .btn-ghost, .btn-icon-edit, .btn-icon-danger,
+    .stage-date-input, .tracing-input, #importFile,
+    .dashboard-section { display: none !important; }
+
+    .app-shell { min-height: unset; }
+    .table-wrapper { overflow: visible !important; max-height: unset !important; }
+
+    table { font-size: 10px; border-collapse: collapse; width: 100%; }
+    table th, table td { padding: 5px 7px !important; border: 1px solid #ccc !important; }
+    table th { background: #1e293b !important; color: white !important; -webkit-print-color-adjust: exact; }
+
+    tbody tr.row-completed td { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; }
+    tbody tr.row-delayed   td { background: #fef2f2 !important; -webkit-print-color-adjust: exact; }
+    tbody tr.row-due-soon  td { background: #fffbeb !important; -webkit-print-color-adjust: exact; }
+
+    .sticky-col { position: static !important; }
+
+    @page { margin: 1.5cm; size: landscape; }
 }
 
 /* ─── Responsive — Full HD ───────────────────────────────────── */

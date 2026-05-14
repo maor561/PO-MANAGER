@@ -31,6 +31,7 @@ const app = {
     currentSort: { col: null, dir: 'asc', isStage: false },
     editingItemId: null,
     dashboardCharts: {},
+    refreshInterval: null,
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -41,7 +42,36 @@ const app = {
         this.renderItems();
         this.renderFieldsSettings();
         this.renderStagesSettings();
+        this.startAutoRefresh();
     },
+
+    /* ── Auto-Refresh ─────────────────────────────────────── */
+    startAutoRefresh() {
+        if (!this.useApi) return;
+        this.refreshInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/items');
+                if (!res.ok) return;
+                const fresh = await res.json();
+                const changed = JSON.stringify(fresh) !== JSON.stringify(this.items);
+                if (changed) {
+                    this.items = fresh;
+                    this.renderItems();
+                    this.showRefreshIndicator();
+                }
+            } catch (e) {}
+        }, 30000); // every 30 seconds
+    },
+
+    showRefreshIndicator() {
+        const el = document.getElementById('refreshIndicator');
+        if (!el) return;
+        el.classList.add('active');
+        setTimeout(() => el.classList.remove('active'), 2000);
+    },
+
+    /* ── Print ────────────────────────────────────────────── */
+    printView() { window.print(); },
 
     loadSettings() {
         this.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS));
@@ -329,7 +359,9 @@ const app = {
     },
 
     async deleteItem(itemId) {
-        if (!confirm('Permanently delete this item?')) return;
+        const item = this.items.find(i => i.id === itemId);
+        const label = item ? `P/N: ${item.partNumber || '?'} | Project: ${item.project || '?'}` : '';
+        if (!confirm(`Delete this item permanently?\n\n${label}\n\nThis cannot be undone.`)) return;
         if (this.useApi) {
             try { await fetch(`/api/items?id=${itemId}`, { method: 'DELETE' }); } catch (e) {}
         }
@@ -385,6 +417,14 @@ const app = {
         return today > arrival;
     },
 
+    isArrivingSoon(item, days = 7) {
+        if (!item.arrivalDate || item.hslwhDate) return false;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
+        const diff = (arrival - today) / 86400000;
+        return diff >= 0 && diff <= days;
+    },
+
     /* ── Filtering ────────────────────────────────────────── */
     getDisplayItems() {
         const search   = (document.getElementById('searchBox')?.value   || '').toLowerCase().trim();
@@ -396,7 +436,8 @@ const app = {
             if (this.hideCompleted && item.hslwhDate) return false;
             if (status === 'completed'  && !item.hslwhDate)            return false;
             if (status === 'in-progress' && item.hslwhDate)            return false;
-            if (status === 'delayed'    && !this.isArrivalDelayed(item))    return false;
+            if (status === 'delayed'   && !this.isArrivalDelayed(item)) return false;
+            if (status === 'due-soon'  && !this.isArrivingSoon(item))  return false;
             if (project  && item.project  !== project)                      return false;
             if (supplier && item.supplier !== supplier)                     return false;
             if (search) {
@@ -554,8 +595,9 @@ const app = {
 
         items.forEach(item => {
             const row = document.createElement('tr');
-            if (this.isArrivalDelayed(item)) row.classList.add('row-delayed');
-            if (item.hslwhDate)          row.classList.add('row-completed');
+            if (item.hslwhDate)                   row.classList.add('row-completed');
+            else if (this.isArrivalDelayed(item)) row.classList.add('row-delayed');
+            else if (this.isArrivingSoon(item))   row.classList.add('row-due-soon');
 
             let html = '';
 
@@ -576,6 +618,12 @@ const app = {
                             ${d !== null ? `<span class="days-badge${d > 5 ? ' days-badge-warning' : ''}">${d}d from PR</span>` : ''}
                         </div></td>`;
 
+                } else if (field.id === 'notes') {
+                    const note = item.notes || '';
+                    const short = note.length > 20 ? note.slice(0, 20) + '…' : note;
+                    const escaped = note.replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
+                    html += `<td class="${sticky}" title="${escaped}" style="cursor:${note ? 'help' : 'default'}">
+                        <span class="notes-cell">${short}</span></td>`;
                 } else {
                     html += `<td class="${sticky}">${item[field.id] ?? ''}</td>`;
                 }
@@ -864,9 +912,22 @@ const app = {
     },
 
     renderSupplierChart(items) {
-        const counts = {};
-        items.forEach(i => { if (i.supplier) counts[i.supplier] = (counts[i.supplier] || 0) + 1; });
-        const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,8);
+        // Group by supplier: count orders + avg lead time
+        const supplierData = {};
+        items.forEach(i => {
+            if (!i.supplier) return;
+            if (!supplierData[i.supplier]) supplierData[i.supplier] = { count: 0, totalDays: 0, withDays: 0 };
+            supplierData[i.supplier].count++;
+            if (i.po && i.hslwhDate) {
+                const d = this.calculateDaysBetween(i.po, i.hslwhDate);
+                if (d !== null) { supplierData[i.supplier].totalDays += d; supplierData[i.supplier].withDays++; }
+            }
+        });
+
+        const sorted = Object.entries(supplierData).sort((a,b) => b[1].count - a[1].count).slice(0,8);
+        const labels  = sorted.map(e => e[0]);
+        const counts  = sorted.map(e => e[1].count);
+        const avgDays = sorted.map(e => e[1].withDays > 0 ? +(e[1].totalDays / e[1].withDays).toFixed(1) : null);
 
         const ctx = document.getElementById('supplierChart');
         if (!ctx) return;
@@ -875,14 +936,19 @@ const app = {
         this.dashboardCharts.supplier = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: sorted.map(e => e[0]),
-                datasets: [{ label: 'Orders', data: sorted.map(e => e[1]),
-                    backgroundColor: '#2563eb', borderRadius: 5, borderSkipped: false }]
+                labels,
+                datasets: [
+                    { label: 'Orders', data: counts, backgroundColor: '#2563eb', borderRadius: 4, yAxisID: 'y' },
+                    { label: 'Avg Lead Days', data: avgDays, backgroundColor: '#f59e0b', borderRadius: 4, yAxisID: 'y2' }
+                ]
             },
             options: {
                 responsive: true, maintainAspectRatio: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+                scales: {
+                    y:  { beginAtZero: true, position: 'left',  title: { display: true, text: 'Orders' } },
+                    y2: { beginAtZero: true, position: 'right', title: { display: true, text: 'Avg Days' }, grid: { drawOnChartArea: false } }
+                }
             }
         });
     },
