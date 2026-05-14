@@ -28,6 +28,7 @@ const app = {
     hideCompleted: false,
     useApi: false,
     currentSort: { col: null, dir: 'asc', isStage: false },
+    editingItemId: null,
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -122,6 +123,77 @@ const app = {
     },
 
     closeAddModal() { document.getElementById('addModal').classList.remove('show'); },
+
+    /* ── Edit Item ────────────────────────────────────────── */
+    openEditModal(itemId) {
+        const item = this.items.find(i => i.id === itemId);
+        if (!item) return;
+        this.editingItemId = itemId;
+        this.generateEditForm(item);
+        document.getElementById('editModal').classList.add('show');
+    },
+
+    generateEditForm(item) {
+        const container = document.getElementById('editFormFields');
+        container.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.className = 'form-grid';
+
+        this.fields.forEach(field => {
+            if (field.type === 'auto') return;
+            const group = document.createElement('div');
+            group.className = field.type === 'textarea' ? 'form-group form-group-full' : 'form-group';
+
+            const label = document.createElement('label');
+            label.textContent = field.name + (field.required ? ' *' : '');
+            group.appendChild(label);
+
+            let input;
+            if (field.type === 'textarea') {
+                input = document.createElement('textarea');
+                input.rows = 2;
+            } else {
+                input = document.createElement('input');
+                input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
+                if (field.type === 'number') input.min = '0';
+            }
+            input.id = 'edit_' + field.id;
+            input.value = item[field.id] ?? '';
+            if (field.required) input.required = true;
+            group.appendChild(input);
+            grid.appendChild(group);
+        });
+
+        container.appendChild(grid);
+    },
+
+    closeEditModal() {
+        document.getElementById('editModal').classList.remove('show');
+        this.editingItemId = null;
+    },
+
+    async saveEditedItem() {
+        const item = this.items.find(i => i.id === this.editingItemId);
+        if (!item) return;
+
+        let valid = true;
+        this.fields.forEach(field => {
+            if (field.type === 'auto') return;
+            const input = document.getElementById('edit_' + field.id);
+            if (!input) return;
+            const value = input.value.trim();
+            if (field.required && !value) { input.classList.add('error'); valid = false; return; }
+            input.classList.remove('error');
+            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0) : value;
+        });
+
+        if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
+
+        await this.saveItems();
+        this.renderItems();
+        this.closeEditModal();
+        this.showMessage('Item updated successfully!', 'success');
+    },
 
     getNextSerial() {
         if (!this.items.length) return 1;
@@ -219,7 +291,7 @@ const app = {
     },
 
     isArrivalDelayed(item) {
-        if (!item.arrivalDate || item.hslwhCompleted) return false;
+        if (!item.arrivalDate || item.arrivalCompleted) return false;
         const today = new Date(); today.setHours(0,0,0,0);
         const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
         return today > arrival;
@@ -452,8 +524,14 @@ const app = {
             });
 
             html += `<td class="action-col">
+                <button class="btn-icon-edit" onclick="app.openEditModal('${item.id}')" title="Edit item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
                 <button class="btn-icon-danger" onclick="app.deleteItem('${item.id}')" title="Delete item">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
                         <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                     </svg>

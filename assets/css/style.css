@@ -182,6 +182,15 @@ button:active { opacity: .85; }
     border-color: #bfdbfe;
 }
 
+.btn-icon-edit {
+    padding: 5px 6px;
+    background: var(--primary-lt);
+    color: var(--primary);
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius);
+}
+.btn-icon-edit:hover { background: #bfdbfe; }
+
 .btn-icon-danger {
     padding: 5px 6px;
     background: var(--danger-lt);
@@ -190,6 +199,16 @@ button:active { opacity: .85; }
     border-radius: var(--radius);
 }
 .btn-icon-danger:hover { background: #fecaca; }
+
+.btn-ghost-dark {
+    padding: 7px 14px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 12px; font-weight: 600;
+}
+.btn-ghost-dark:hover { background: var(--gray-200); }
 
 /* ─── Message ────────────────────────────────────────────────── */
 .message {

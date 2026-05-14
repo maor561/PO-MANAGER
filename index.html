@@ -149,6 +149,25 @@
     </div>
 </div>
 
+<!-- ── Edit Item Modal ─────────────────────────────── -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>Edit Item</span>
+            <button class="modal-close" onclick="app.closeEditModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <form id="editForm" onsubmit="event.preventDefault(); app.saveEditedItem();">
+            <div id="editFormFields"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost-dark" onclick="app.closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-action">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ── Settings Modal ─────────────────────────────── -->
 <div id="settingsModal" class="modal">
     <div class="modal-content modal-large">
