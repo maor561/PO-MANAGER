@@ -5,10 +5,11 @@ const DEFAULT_FIELDS = [
     { id: 'revision', name: 'REV', required: false, type: 'text' },
     { id: 'quantity', name: 'Qty', required: false, type: 'number' },
     { id: 'project', name: 'Project', required: true, type: 'text' },
-    { id: 'pd', name: 'PD', required: false, type: 'date' },
-    { id: 'po', name: 'PO', required: false, type: 'date' },
+    { id: 'pd', name: 'Purchase Req.', required: false, type: 'date' },
+    { id: 'poNumber', name: 'PO #', required: false, type: 'text' },
+    { id: 'po', name: 'PO Date', required: false, type: 'date' },
     { id: 'supplier', name: 'Supplier', required: false, type: 'text' },
-    { id: 'wd', name: 'WD', required: false, type: 'number' },
+    { id: 'wd', name: 'Working Days', required: false, type: 'number' },
     { id: 'notes', name: 'Notes', required: false, type: 'textarea' }
 ];
 
@@ -245,6 +246,21 @@ const app = {
         return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
     },
 
+    calculateDaysBetween(d1, d2) {
+        if (!d1 || !d2) return null;
+        const a = new Date(d1); a.setHours(0, 0, 0, 0);
+        const b = new Date(d2); b.setHours(0, 0, 0, 0);
+        if (isNaN(a) || isNaN(b)) return null;
+        return Math.round((b - a) / 86400000);
+    },
+
+    isArrivalDelayed(item) {
+        if (!item.arrivalDate || item.hslwhCompleted) return false;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const arrival = new Date(item.arrivalDate); arrival.setHours(0, 0, 0, 0);
+        return today > arrival;
+    },
+
     renderItems() {
         this.updateDashboard();
         const tbody = document.getElementById('itemsBody');
@@ -254,18 +270,32 @@ const app = {
 
         itemsToRender.forEach(item => {
             const row = document.createElement('tr');
+            if (this.isArrivalDelayed(item)) row.classList.add('row-delayed');
 
             let html = '';
 
             // Item detail fields
             this.fields.forEach((field, index) => {
                 const sticky = index === 0 ? 'sticky-col sticky-col-1' : index === 1 ? 'sticky-col sticky-col-2' : '';
+
                 if (field.id === 'serialNumber') {
                     html += `<td class="${sticky}"><strong>${item.serialNumber || ''}</strong></td>`;
-                } else if (field.id === 'po' || field.id === 'pd') {
-                    html += `<td class="${sticky}">${this.formatDate(item[field.id])}</td>`;
+
+                } else if (field.id === 'pd') {
+                    html += `<td class="${sticky}">${this.formatDate(item.pd)}</td>`;
+
+                } else if (field.id === 'po') {
+                    // Show PO date + days elapsed from Purchase Req.
+                    const daysToPO = this.calculateDaysBetween(item.pd, item.po);
+                    const badge = daysToPO !== null
+                        ? `<span class="days-badge">${daysToPO}d from PR</span>`
+                        : '';
+                    html += `<td class="${sticky}">
+                        <div class="date-with-badge">${this.formatDate(item.po)}${badge}</div>
+                    </td>`;
+
                 } else {
-                    html += `<td class="${sticky}">${item[field.id] || ''}</td>`;
+                    html += `<td class="${sticky}">${item[field.id] ?? ''}</td>`;
                 }
             });
 
@@ -276,7 +306,6 @@ const app = {
             // Stage columns
             this.stages.forEach(stage => {
                 if (stage.type === 'text') {
-                    // Tracing Number - plain text input
                     const val = item[stage.key] || '';
                     html += `
                         <td>
@@ -288,6 +317,16 @@ const app = {
                 } else {
                     const dateVal = item[stage.key] || '';
                     const isCompleted = item[stage.completedKey] || false;
+
+                    // HSL WH: also show days from PO to receipt
+                    let extraBadge = '';
+                    if (stage.id === 'hslwh') {
+                        const daysFromPO = this.calculateDaysBetween(item.po, dateVal);
+                        if (daysFromPO !== null) {
+                            extraBadge = `<span class="days-badge">${daysFromPO}d from PO</span>`;
+                        }
+                    }
+
                     html += `
                         <td>
                             <div class="stage-cell">
@@ -297,6 +336,7 @@ const app = {
                                 <input type="date" class="stage-date-input"
                                     value="${dateVal}"
                                     onchange="app.updateStageDate('${item.id}', '${stage.key}', this.value)">
+                                ${extraBadge}
                             </div>
                         </td>`;
                 }
@@ -316,10 +356,12 @@ const app = {
     updateDashboard() {
         const total = this.items.length;
         const completed = this.items.filter(i => i.hslwhCompleted).length;
+        const delayed = this.items.filter(i => this.isArrivalDelayed(i)).length;
         const inProgress = total - completed;
 
         document.getElementById('totalItems').textContent = total;
         document.getElementById('completedItems').textContent = completed;
+        document.getElementById('delayedItems').textContent = delayed;
         document.getElementById('inProgressItems').textContent = inProgress;
     },
 
