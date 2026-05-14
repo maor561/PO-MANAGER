@@ -30,6 +30,7 @@ const app = {
     useApi: false,
     currentSort: { col: null, dir: 'asc', isStage: false },
     editingItemId: null,
+    dashboardCharts: {},
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -662,6 +663,12 @@ const app = {
         document.getElementById('completedItems').textContent = completed;
         document.getElementById('delayedItems').textContent   = delayed;
         document.getElementById('inProgressItems').textContent = inProgress;
+
+        // Update dashboard if visible
+        const dashboardSection = document.getElementById('dashboardSection');
+        if (dashboardSection && !dashboardSection.classList.contains('hidden')) {
+            this.renderDashboard();
+        }
     },
 
     /* ── Export / Import ──────────────────────────────────── */
@@ -760,6 +767,112 @@ const app = {
         } else {
             reader.readAsBinaryString(file);
         }
+    },
+
+    /* ── Dashboard ─────────────────────────────────────── */
+    switchView(view) {
+        const dashboard = document.getElementById('dashboardSection');
+        const filterBar = document.querySelector('.filter-bar');
+        const tableWrapper = document.querySelector('.table-wrapper');
+        const tableTab = document.getElementById('tableTabBtn');
+        const dashTab = document.getElementById('dashboardTabBtn');
+
+        if (view === 'dashboard') {
+            dashboard.classList.remove('hidden');
+            filterBar.style.display = 'none';
+            tableWrapper.style.display = 'none';
+            tableTab.classList.remove('active');
+            dashTab.classList.add('active');
+            this.renderDashboard();
+        } else {
+            dashboard.classList.add('hidden');
+            filterBar.style.display = 'flex';
+            tableWrapper.style.display = 'block';
+            tableTab.classList.add('active');
+            dashTab.classList.remove('active');
+        }
+    },
+
+    renderDashboard() {
+        const total = this.items.length;
+        const completed = this.items.filter(i => i.hslwhDate).length;
+        const delayed = this.items.filter(i => this.isArrivalDelayed(i)).length;
+        const onTimeCount = this.items.filter(i => i.hslwhDate && !this.isArrivalDelayed(i)).length;
+        const onTimePercent = total > 0 ? Math.round((onTimeCount / total) * 100) : 0;
+
+        document.getElementById('dashTotalOrders').textContent = total;
+        document.getElementById('dashCompleted').textContent = completed;
+        document.getElementById('dashDelayed').textContent = delayed;
+        document.getElementById('dashOnTime').textContent = onTimePercent + '%';
+
+        this.renderSupplierChart();
+        this.renderTimelineChart();
+    },
+
+    renderSupplierChart() {
+        const suppliers = {};
+        this.items.forEach(i => {
+            if (i.supplier) suppliers[i.supplier] = (suppliers[i.supplier] || 0) + 1;
+        });
+
+        const ctx = document.getElementById('supplierChart');
+        if (!ctx) return;
+        if (this.dashboardCharts.supplier) this.dashboardCharts.supplier.destroy();
+
+        this.dashboardCharts.supplier = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(suppliers).slice(0, 8),
+                datasets: [{
+                    label: 'Orders',
+                    data: Object.values(suppliers).slice(0, 8),
+                    backgroundColor: '#2563eb',
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    },
+
+    renderTimelineChart() {
+        const deliveriesByDate = {};
+        this.items.filter(i => i.hslwhDate).forEach(i => {
+            const date = i.hslwhDate;
+            deliveriesByDate[date] = (deliveriesByDate[date] || 0) + 1;
+        });
+
+        const sortedDates = Object.keys(deliveriesByDate).sort().slice(-20);
+        const ctx = document.getElementById('timelineChart');
+        if (!ctx) return;
+        if (this.dashboardCharts.timeline) this.dashboardCharts.timeline.destroy();
+
+        this.dashboardCharts.timeline = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'Deliveries',
+                    data: sortedDates.map(d => deliveriesByDate[d] || 0),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: true } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
     },
 
     /* ── Persistence ──────────────────────────────────────── */

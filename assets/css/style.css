@@ -618,6 +618,65 @@ input[type="file"] { display: none; }
 .settings-table tbody tr:last-child td { border-bottom: none; }
 .settings-table tbody tr:hover { background: var(--gray-50); }
 
+/* ─── View Tabs ──────────────────────────────────────────────── */
+.view-tabs {
+    display: flex; gap: 0; padding: 0; background: white;
+    border-bottom: 1px solid var(--gray-200);
+    padding-left: 24px;
+}
+.view-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 12px 20px; background: none; border: none;
+    font-size: 13px; font-weight: 600; color: var(--gray-500);
+    cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all .2s;
+}
+.view-tab:hover { color: var(--gray-700); }
+.view-tab.active {
+    color: var(--primary); border-bottom-color: var(--primary);
+}
+
+/* ─── Dashboard ──────────────────────────────────────────────── */
+.dashboard-section {
+    padding: 24px;
+    background: var(--gray-50);
+    min-height: calc(100vh - 200px);
+}
+.dashboard-section.hidden { display: none; }
+
+.dashboard-summary {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px; margin-bottom: 28px;
+}
+.summary-card {
+    background: white; padding: 18px; border-radius: 8px;
+    border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+}
+.summary-label {
+    font-size: 11px; color: var(--gray-500);
+    text-transform: uppercase; letter-spacing: .3px; font-weight: 600;
+    margin-bottom: 8px;
+}
+.summary-value {
+    font-size: 28px; font-weight: 700; color: var(--primary);
+    line-height: 1;
+}
+.summary-value.at-risk { color: var(--danger); }
+
+.dashboard-charts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.chart-box {
+    background: white; padding: 20px; border-radius: 8px;
+    border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);
+}
+.chart-box h4 {
+    font-size: 13px; font-weight: 600; color: var(--gray-800);
+    margin-bottom: 16px; text-transform: uppercase; letter-spacing: .3px;
+}
+.chart-box canvas { max-height: 200px; }
+
 /* ─── Responsive — Full HD ───────────────────────────────────── */
 @media (min-width: 1920px) {
     :root { --row-h: 38px; }

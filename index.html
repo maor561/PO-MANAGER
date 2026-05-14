@@ -71,6 +71,50 @@
     <!-- ── Message ────────────────────────────────────── -->
     <div class="message" id="message"></div>
 
+    <!-- ── View Toggle ────────────────────────────────── -->
+    <div class="view-tabs">
+        <button class="view-tab active" onclick="app.switchView('table')" id="tableTabBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="21" y2="3"/><line x1="3" y1="3" x2="3" y2="21"/><line x1="3" y1="21" x2="21" y2="21"/><line x1="21" y1="3" x2="21" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+            Items Table
+        </button>
+        <button class="view-tab" onclick="app.switchView('dashboard')" id="dashboardTabBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </button>
+    </div>
+
+    <!-- ── Dashboard Section ──────────────────────────── -->
+    <div id="dashboardSection" class="dashboard-section hidden">
+        <div class="dashboard-summary">
+            <div class="summary-card">
+                <div class="summary-label">Total Orders</div>
+                <div class="summary-value" id="dashTotalOrders">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Completed</div>
+                <div class="summary-value" id="dashCompleted">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">On-Time %</div>
+                <div class="summary-value" id="dashOnTime">0%</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Delayed</div>
+                <div class="summary-value at-risk" id="dashDelayed">0</div>
+            </div>
+        </div>
+        <div class="dashboard-charts">
+            <div class="chart-box">
+                <h4>Supplier Performance</h4>
+                <canvas id="supplierChart" height="200"></canvas>
+            </div>
+            <div class="chart-box">
+                <h4>Delivery Timeline</h4>
+                <canvas id="timelineChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Filter Bar ─────────────────────────────────── -->
     <div class="filter-bar">
         <div class="filter-bar-left">
@@ -227,6 +271,7 @@
 </div>
 
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>
