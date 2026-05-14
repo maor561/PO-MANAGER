@@ -666,24 +666,39 @@ const app = {
 
     /* ── Export / Import ──────────────────────────────────── */
     exportToExcel() {
-        const data = this.items.map(item => {
-            const row = {};
-            this.fields.forEach(f => { row[f.name] = item[f.id] ?? ''; });
-            row['Quot. Date'] = this.calculateQuotationDate(item.po, item.wd);
-            this.stages.forEach(s => {
-                row[s.name] = item[s.key] || '';
-                if (s.completedKey) row[s.name + ' Done'] = item[s.completedKey] ? 'Yes' : 'No';
+        if (typeof XLSX === 'undefined') {
+            this.showMessage('Excel library not loaded. Please refresh the page and try again.', 'error');
+            return;
+        }
+
+        try {
+            const data = this.items.map(item => {
+                const row = {};
+                this.fields.forEach(f => { row[f.name] = item[f.id] ?? ''; });
+                row['Quot. Date'] = this.calculateQuotationDate(item.po, item.wd);
+                this.stages.forEach(s => {
+                    row[s.name] = item[s.key] || '';
+                    if (s.completedKey) row[s.name + ' Done'] = item[s.completedKey] ? 'Yes' : 'No';
+                });
+                return row;
             });
-            return row;
-        });
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Items');
-        XLSX.writeFile(wb, `PO_Items_${new Date().toISOString().split('T')[0]}.xlsx`);
-        this.showMessage('Excel exported successfully!', 'success');
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Items');
+            XLSX.writeFile(wb, `PO_Items_${new Date().toISOString().split('T')[0]}.xlsx`);
+            this.showMessage('Excel exported successfully!', 'success');
+        } catch (err) {
+            this.showMessage('Error exporting to Excel: ' + err.message, 'error');
+            console.error('Export error:', err);
+        }
     },
 
     importFromExcel(event) {
+        if (typeof XLSX === 'undefined') {
+            this.showMessage('Excel library not loaded. Please refresh the page and try again.', 'error');
+            return;
+        }
+
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -705,8 +720,8 @@ const app = {
                 this.showMessage(`${data.length} item(s) imported!`, 'success');
                 event.target.value = '';
             } catch (err) {
-                this.showMessage('Error importing file!', 'error');
-                console.error(err);
+                this.showMessage('Error importing file: ' + err.message, 'error');
+                console.error('Import error:', err);
             }
         };
         reader.readAsBinaryString(file);
