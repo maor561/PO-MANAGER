@@ -268,6 +268,19 @@ const app = {
     },
 
     /* ── Update ───────────────────────────────────────────── */
+    confirmClearPromiseDate(itemId) {
+        const item = this.items.find(i => i.id === itemId);
+        if (!item) return;
+        const currentDate = this.formatDate(item.promiseDate);
+        const historyCount = item.promiseDateHistory ? item.promiseDateHistory.length : 0;
+        const confirmed = confirm(
+            `Clear Promise Date?\n\nCurrent date: ${currentDate}\nHistory entries: ${historyCount}\n\nThis will also erase the entire date history.\nAre you sure?`
+        );
+        if (confirmed) {
+            this.updateStageDate(itemId, 'promiseDate', '');
+        }
+    },
+
     async updateStageDate(itemId, stageKey, dateValue) {
         const item = this.items.find(i => i.id === itemId);
         if (!item) return;
@@ -604,7 +617,7 @@ const app = {
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     let clearBtn = '';
                     if (stage.id === 'promiseDate' && item.promiseDateHistory && item.promiseDateHistory.length > 0) {
-                        clearBtn = `<button class="btn-clear" onclick="app.updateStageDate('${item.id}','${stage.key}','')">✕</button>`;
+                        clearBtn = `<button class="btn-clear" onclick="app.confirmClearPromiseDate('${item.id}')">✕</button>`;
                     }
 
                     html += `<td>
