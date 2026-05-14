@@ -3,6 +3,7 @@ const DEFAULT_FIELDS = [
     { id: 'serialNumber', name: '#', required: false, type: 'auto' },
     { id: 'partNumber', name: 'P/N', required: true, type: 'text' },
     { id: 'revision', name: 'REV', required: false, type: 'text' },
+    { id: 'quantity', name: 'Qty', required: false, type: 'number' },
     { id: 'project', name: 'Project', required: true, type: 'text' },
     { id: 'pd', name: 'PD', required: false, type: 'date' },
     { id: 'po', name: 'PO', required: false, type: 'date' },
@@ -257,13 +258,14 @@ const app = {
             let html = '';
 
             // Item detail fields
-            this.fields.forEach(field => {
+            this.fields.forEach((field, index) => {
+                const sticky = index === 0 ? 'sticky-col sticky-col-1' : index === 1 ? 'sticky-col sticky-col-2' : '';
                 if (field.id === 'serialNumber') {
-                    html += `<td><strong>${item.serialNumber || ''}</strong></td>`;
+                    html += `<td class="${sticky}"><strong>${item.serialNumber || ''}</strong></td>`;
                 } else if (field.id === 'po' || field.id === 'pd') {
-                    html += `<td>${this.formatDate(item[field.id])}</td>`;
+                    html += `<td class="${sticky}">${this.formatDate(item[field.id])}</td>`;
                 } else {
-                    html += `<td>${item[field.id] || ''}</td>`;
+                    html += `<td class="${sticky}">${item[field.id] || ''}</td>`;
                 }
             });
 
@@ -400,8 +402,9 @@ const app = {
             `<th colspan="${supplyColCount}" class="parent-header-cell">Supply Chain</th>`;
 
         let childHtml = '';
-        this.fields.forEach(field => {
-            childHtml += `<th class="sortable child-th" onclick="app.sortByColumn('${field.id}')">${field.name}</th>`;
+        this.fields.forEach((field, index) => {
+            const sticky = index === 0 ? 'sticky-col sticky-col-1' : index === 1 ? 'sticky-col sticky-col-2' : '';
+            childHtml += `<th class="sortable child-th ${sticky}" onclick="app.sortByColumn('${field.id}')">${field.name}</th>`;
         });
         // Calculated column
         childHtml += `<th class="child-th">Quot. Date</th>`;
