@@ -1,4 +1,4 @@
-const { sql, ensureTable } = require('./db');
+const { ensureCollection } = require('./db');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,17 +8,25 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
-        await ensureTable();
+        const collection = await ensureCollection();
 
         if (req.method === 'GET') {
-            const { rows } = await sql`SELECT data FROM po_items ORDER BY created_at ASC`;
-            return res.json(rows.map(r => r.data));
+            const items = await collection.find({}).sort({ createdAt: 1 }).toArray();
+            return res.json(items.map(doc => {
+                const { _id, ...item } = doc;
+                return item;
+            }));
         }
 
         if (req.method === 'POST') {
             const item = req.body;
             if (!item || !item.id) return res.status(400).json({ error: 'Missing item id' });
-            await sql`INSERT INTO po_items (id, data) VALUES (${item.id}, ${JSON.stringify(item)}) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data`;
+
+            await collection.updateOne(
+                { id: item.id },
+                { $set: item },
+                { upsert: true }
+            );
             return res.json(item);
         }
 
@@ -27,10 +35,10 @@ module.exports = async (req, res) => {
             const items = req.body;
             if (!Array.isArray(items)) return res.status(400).json({ error: 'Expected array' });
 
-            // Rebuild table: delete all then insert
-            await sql`DELETE FROM po_items`;
-            for (const item of items) {
-                await sql`INSERT INTO po_items (id, data) VALUES (${item.id}, ${JSON.stringify(item)})`;
+            // Clear and rebuild collection
+            await collection.deleteMany({});
+            if (items.length > 0) {
+                await collection.insertMany(items);
             }
             return res.json({ success: true, count: items.length });
         }
@@ -38,7 +46,7 @@ module.exports = async (req, res) => {
         if (req.method === 'DELETE') {
             const { id } = req.query;
             if (!id) return res.status(400).json({ error: 'Missing id' });
-            await sql`DELETE FROM po_items WHERE id = ${id}`;
+            await collection.deleteOne({ id });
             return res.json({ success: true });
         }
 

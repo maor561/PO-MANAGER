@@ -781,15 +781,23 @@ const app = {
     },
 
     async loadItems() {
-        if (window.location.protocol !== 'file:') {
-            try {
-                const res = await fetch('/api/items');
-                if (res.ok) { this.items = await res.json(); this.useApi = true; return; }
-                else console.warn('API unavailable (status ' + res.status + '), using localStorage');
-            } catch (e) { console.warn('API unavailable, using localStorage'); }
+        try {
+            const res = await fetch('/api/items');
+            if (res.ok) {
+                this.items = await res.json();
+                this.useApi = true;
+                return;
+            } else {
+                console.error('API error: ' + res.status);
+                throw new Error('API returned ' + res.status);
+            }
+        } catch (e) {
+            console.error('Failed to load from MongoDB:', e.message);
+            // Fallback to localStorage as emergency backup only
+            const data = localStorage.getItem('po_items_v2');
+            this.items = data ? JSON.parse(data) : [];
+            this.useApi = false;
         }
-        const data = localStorage.getItem('po_items_v2');
-        this.items = data ? JSON.parse(data) : [];
     }
 };
 

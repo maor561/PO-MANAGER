@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Purchase Order tracking system",
   "dependencies": {
-    "@vercel/postgres": "^0.10.0"
+    "mongodb": "^6.0.0"
   }
 }
