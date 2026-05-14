@@ -340,8 +340,8 @@ table th {
     padding: 9px 10px;
     text-align: left;
     font-size: 11px;
-    font-weight: 700;
-    color: var(--gray-600);
+    font-weight: 800;
+    color: var(--gray-800);
     text-transform: uppercase;
     letter-spacing: .4px;
     border-bottom: 1px solid var(--gray-200);
@@ -368,11 +368,11 @@ table th:last-child { border-right: none; }
 
 /* ─── Stage Header ───────────────────────────────────────────── */
 .stage-header {
-    color: var(--primary) !important;
-    background: rgba(37,99,235,.04) !important;
+    color: var(--primary-dk) !important;
+    background: rgba(37,99,235,.06) !important;
 }
-.stage-header:hover { background: rgba(37,99,235,.08) !important; }
-.stage-header .sort-icon { color: rgba(37,99,235,.3); }
+.stage-header:hover { background: rgba(37,99,235,.11) !important; }
+.stage-header .sort-icon { color: rgba(37,99,235,.4); }
 
 .actions-th { text-align: center !important; width: 52px; }
 
@@ -391,9 +391,10 @@ thead .sticky-col-1, thead .sticky-col-2 { z-index: 13; }
 /* ─── Table Body ─────────────────────────────────────────────── */
 table td {
     padding: 8px 10px;
-    border-bottom: 1px solid var(--gray-100);
+    border-bottom: 1px solid var(--gray-200);
     border-right: 1px solid var(--gray-100);
-    color: var(--gray-700);
+    color: var(--gray-900);
+    font-weight: 500;
     vertical-align: middle;
     white-space: nowrap;
     height: var(--row-h);
@@ -412,10 +413,10 @@ tbody tr td.sticky-col-1,
 tbody tr td.sticky-col-2 { background: inherit; }
 
 /* Serial */
-.col-serial { font-weight: 700; color: var(--gray-500); text-align: center; font-size: 12px; }
+.col-serial { font-weight: 800; color: var(--gray-600); text-align: center; font-size: 12px; }
 
 /* Completed row */
-tbody tr.row-completed td { color: var(--gray-400); }
+tbody tr.row-completed td { color: var(--gray-500); }
 tbody tr.row-completed { background: var(--gray-25) !important; }
 
 /* Delayed row */
@@ -458,7 +459,8 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
     font-size: 10.5px; text-align: center;
     background: var(--gray-50);
     font-family: inherit;
-    color: var(--gray-700);
+    color: var(--gray-900);
+    font-weight: 600;
     transition: border-color .15s;
 }
 .stage-date-input:focus { outline: none; border-color: var(--primary); background: white; }
@@ -471,7 +473,8 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
     border-radius: 4px;
     font-size: 11px;
     font-family: 'Courier New', monospace;
-    color: var(--gray-700);
+    color: var(--gray-900);
+    font-weight: 600;
     background: var(--gray-50);
     transition: border-color .15s;
 }
