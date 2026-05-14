@@ -272,13 +272,19 @@ const app = {
         if (!item) return;
 
         // Track Promise Date history
-        if (stageKey === 'promiseDate' && dateValue && item.promiseDate !== dateValue) {
-            if (!item.promiseDateHistory) item.promiseDateHistory = [];
-            if (item.promiseDate) {
-                item.promiseDateHistory.push({
-                    date: item.promiseDate,
-                    changedAt: new Date().toISOString()
-                });
+        if (stageKey === 'promiseDate') {
+            if (dateValue && item.promiseDate !== dateValue) {
+                // User changed the date - add to history
+                if (!item.promiseDateHistory) item.promiseDateHistory = [];
+                if (item.promiseDate) {
+                    item.promiseDateHistory.push({
+                        date: item.promiseDate,
+                        changedAt: new Date().toISOString()
+                    });
+                }
+            } else if (!dateValue) {
+                // User cleared the date - clear history
+                item.promiseDateHistory = [];
             }
         }
 
