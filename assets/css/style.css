@@ -441,6 +441,17 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
     color: var(--danger);
 }
 
+.history-badge {
+    display: inline-block;
+    font-size: 8px; font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 8px;
+    background: #fbbf24;
+    color: #78350f;
+    cursor: help;
+    margin-left: 2px;
+}
+
 /* ─── Stage Cells ────────────────────────────────────────────── */
 .stage-cell {
     display: flex; flex-direction: column;

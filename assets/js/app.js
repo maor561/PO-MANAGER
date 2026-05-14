@@ -270,6 +270,18 @@ const app = {
     async updateStageDate(itemId, stageKey, dateValue) {
         const item = this.items.find(i => i.id === itemId);
         if (!item) return;
+
+        // Track Promise Date history
+        if (stageKey === 'promiseDate' && dateValue && item.promiseDate !== dateValue) {
+            if (!item.promiseDateHistory) item.promiseDateHistory = [];
+            if (item.promiseDate) {
+                item.promiseDateHistory.push({
+                    date: item.promiseDate,
+                    changedAt: new Date().toISOString()
+                });
+            }
+        }
+
         item[stageKey] = dateValue;
         const stage = this.stages.find(s => s.key === stageKey);
         if (stage && stage.completedKey) {
@@ -293,6 +305,7 @@ const app = {
         if (!item) return;
         item[key] = value;
         await this.saveItems();
+        this.renderItems();
     },
 
     async deleteItem(itemId) {
@@ -330,6 +343,19 @@ const app = {
         if (!dateStr) return '';
         const d = new Date(dateStr);
         return isNaN(d) ? dateStr : d.toLocaleDateString('en-GB');
+    },
+
+    getPromiseDateHistory(item) {
+        if (!item.promiseDateHistory || item.promiseDateHistory.length === 0) return '';
+        let history = 'Promise Date History:\n';
+        item.promiseDateHistory.forEach((h, i) => {
+            const changeDate = new Date(h.changedAt);
+            history += `${i + 1}. Changed to ${this.formatDate(h.date)} (${changeDate.toLocaleDateString('en-GB')} ${changeDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })})\n`;
+        });
+        if (item.promiseDate) {
+            history += `Current: ${this.formatDate(item.promiseDate)}`;
+        }
+        return history;
     },
 
     isArrivalDelayed(item) {
@@ -554,16 +580,26 @@ const app = {
                     const dateVal = item[stage.key] || '';
                     const isCompleted = dateVal ? true : false;
                     let badge = '';
+                    let historyIndicator = '';
+                    let tooltip = '';
+
                     if (stage.id === 'poDate') {
                         const d = this.calculateDaysBetween(item.pd, dateVal);
                         badge = d !== null ? `<span class="days-badge${d > 5 ? ' days-badge-warning' : ''}">${d}d from PR</span>` : '';
+                    } else if (stage.id === 'promiseDate') {
+                        if (item.promiseDateHistory && item.promiseDateHistory.length > 0) {
+                            const changeCount = item.promiseDateHistory.length;
+                            tooltip = this.getPromiseDateHistory(item).replace(/\n/g, '&#10;');
+                            historyIndicator = `<span class="history-badge" title="${tooltip}">[${changeCount}]</span>`;
+                        }
                     }
+
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     html += `<td>
                         <div class="${completedClass}">
                             <input type="date" class="stage-date-input" value="${dateVal}"
                                 onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
-                            ${badge}
+                            ${badge}${historyIndicator}
                         </div></td>`;
                 } else {
                     const dateVal    = item[stage.key] || '';
