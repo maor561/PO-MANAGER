@@ -787,17 +787,18 @@ const app = {
                 this.items = await res.json();
                 this.useApi = true;
                 return;
+            } else if (res.status === 503) {
+                console.warn('Database unavailable (503), using localStorage');
             } else {
-                console.error('API error: ' + res.status);
-                throw new Error('API returned ' + res.status);
+                console.warn('API error: ' + res.status);
             }
         } catch (e) {
-            console.error('Failed to load from MongoDB:', e.message);
-            // Fallback to localStorage as emergency backup only
-            const data = localStorage.getItem('po_items_v2');
-            this.items = data ? JSON.parse(data) : [];
-            this.useApi = false;
+            console.warn('Failed to reach API:', e.message);
         }
+        // Fallback to localStorage
+        const data = localStorage.getItem('po_items_v2');
+        this.items = data ? JSON.parse(data) : [];
+        this.useApi = false;
     }
 };
 

@@ -1,4 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm install"
+  "functions": {
+    "api/items.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }

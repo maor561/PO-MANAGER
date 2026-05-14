@@ -1,4 +1,11 @@
-const { ensureCollection } = require('./db');
+let ensureCollection;
+try {
+    ({ ensureCollection } = require('./db'));
+} catch (e) {
+    console.error('MongoDB module error:', e.message);
+    // Fallback handler if MongoDB fails to load
+    ensureCollection = null;
+}
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,6 +15,10 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
+        if (!ensureCollection) {
+            return res.status(503).json({ error: 'Database not available', fallback: 'use localStorage' });
+        }
+
         const collection = await ensureCollection();
 
         if (req.method === 'GET') {
