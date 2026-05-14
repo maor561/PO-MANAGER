@@ -793,27 +793,67 @@ const app = {
         }
     },
 
-    renderDashboard() {
-        const total = this.items.length;
-        const completed = this.items.filter(i => i.hslwhDate).length;
-        const delayed = this.items.filter(i => this.isArrivalDelayed(i)).length;
-        const onTimeCount = this.items.filter(i => i.hslwhDate && !this.isArrivalDelayed(i)).length;
-        const onTimePercent = total > 0 ? Math.round((onTimeCount / total) * 100) : 0;
-
-        document.getElementById('dashTotalOrders').textContent = total;
-        document.getElementById('dashCompleted').textContent = completed;
-        document.getElementById('dashDelayed').textContent = delayed;
-        document.getElementById('dashOnTime').textContent = onTimePercent + '%';
-
-        this.renderSupplierChart();
-        this.renderTimelineChart();
+    clearDashDateFilter() {
+        document.getElementById('dashFromDate').value = '';
+        document.getElementById('dashToDate').value = '';
+        this.renderDashboard();
     },
 
-    renderSupplierChart() {
-        const suppliers = {};
-        this.items.forEach(i => {
-            if (i.supplier) suppliers[i.supplier] = (suppliers[i.supplier] || 0) + 1;
+    getDashItems() {
+        const from = document.getElementById('dashFromDate')?.value;
+        const to   = document.getElementById('dashToDate')?.value;
+        if (!from && !to) return this.items;
+        return this.items.filter(item => {
+            const d = item.po || item.pd;
+            if (!d) return true;
+            if (from && d < from) return false;
+            if (to   && d > to)   return false;
+            return true;
         });
+    },
+
+    renderDashboard() {
+        const items = this.getDashItems();
+        const total    = items.length;
+        const completed = items.filter(i => i.hslwhDate).length;
+        const atRisk   = items.filter(i => this.isArrivalDelayed(i)).length;
+
+        // On-Time: completed and NOT delayed at arrival
+        const onTimeCount = items.filter(i => {
+            if (!i.hslwhDate) return false;
+            if (!i.arrivalDate) return true;
+            return new Date(i.hslwhDate) <= new Date(i.arrivalDate);
+        }).length;
+        const onTimePct = completed > 0 ? Math.round((onTimeCount / completed) * 100) : 0;
+
+        // Avg Lead Time: PO Date → HSL WH
+        const withLead = items.filter(i => i.po && i.hslwhDate);
+        const avgLead  = withLead.length > 0
+            ? (withLead.reduce((s, i) => s + (this.calculateDaysBetween(i.po, i.hslwhDate) || 0), 0) / withLead.length).toFixed(1)
+            : null;
+
+        // Top Supplier (most orders)
+        const supplierCount = {};
+        items.forEach(i => { if (i.supplier) supplierCount[i.supplier] = (supplierCount[i.supplier] || 0) + 1; });
+        const topSupplier = Object.entries(supplierCount).sort((a, b) => b[1] - a[1])[0];
+
+        // Update KPI cards
+        document.getElementById('dashTotalOrders').textContent = total;
+        document.getElementById('dashOnTime').textContent      = onTimePct + '%';
+        document.getElementById('dashAvgLead').textContent     = avgLead ? avgLead + 'd' : '—';
+        document.getElementById('dashAtRisk').textContent      = atRisk;
+        document.getElementById('dashTopSupplier').textContent = topSupplier ? topSupplier[0] : '—';
+
+        this.renderSupplierChart(items);
+        this.renderOnTimePie(onTimeCount, completed - onTimeCount);
+        this.renderTimelineChart(items);
+        this.renderAtRiskTable(items);
+    },
+
+    renderSupplierChart(items) {
+        const counts = {};
+        items.forEach(i => { if (i.supplier) counts[i.supplier] = (counts[i.supplier] || 0) + 1; });
+        const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,8);
 
         const ctx = document.getElementById('supplierChart');
         if (!ctx) return;
@@ -822,31 +862,46 @@ const app = {
         this.dashboardCharts.supplier = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: Object.keys(suppliers).slice(0, 8),
-                datasets: [{
-                    label: 'Orders',
-                    data: Object.values(suppliers).slice(0, 8),
-                    backgroundColor: '#2563eb',
-                    borderRadius: 4,
-                }]
+                labels: sorted.map(e => e[0]),
+                datasets: [{ label: 'Orders', data: sorted.map(e => e[1]),
+                    backgroundColor: '#2563eb', borderRadius: 5, borderSkipped: false }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
+                responsive: true, maintainAspectRatio: true,
                 plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
     },
 
-    renderTimelineChart() {
-        const deliveriesByDate = {};
-        this.items.filter(i => i.hslwhDate).forEach(i => {
-            const date = i.hslwhDate;
-            deliveriesByDate[date] = (deliveriesByDate[date] || 0) + 1;
-        });
+    renderOnTimePie(onTime, late) {
+        const ctx = document.getElementById('onTimePieChart');
+        if (!ctx) return;
+        if (this.dashboardCharts.pie) this.dashboardCharts.pie.destroy();
 
-        const sortedDates = Object.keys(deliveriesByDate).sort().slice(-20);
+        this.dashboardCharts.pie = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['On-Time', 'Late'],
+                datasets: [{ data: [onTime, late],
+                    backgroundColor: ['#16a34a', '#dc2626'],
+                    borderColor: 'white', borderWidth: 3 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+            }
+        });
+    },
+
+    renderTimelineChart(items) {
+        const byMonth = {};
+        items.filter(i => i.hslwhDate).forEach(i => {
+            const m = i.hslwhDate.slice(0, 7);
+            byMonth[m] = (byMonth[m] || 0) + 1;
+        });
+        const months = Object.keys(byMonth).sort().slice(-12);
+
         const ctx = document.getElementById('timelineChart');
         if (!ctx) return;
         if (this.dashboardCharts.timeline) this.dashboardCharts.timeline.destroy();
@@ -854,25 +909,44 @@ const app = {
         this.dashboardCharts.timeline = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: sortedDates,
-                datasets: [{
-                    label: 'Deliveries',
-                    data: sortedDates.map(d => deliveriesByDate[d] || 0),
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.3,
-                    fill: true,
-                    pointRadius: 4,
-                }]
+                labels: months,
+                datasets: [{ label: 'Deliveries per Month',
+                    data: months.map(m => byMonth[m] || 0),
+                    borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)',
+                    borderWidth: 2.5, tension: 0.4, fill: true,
+                    pointBackgroundColor: '#2563eb', pointRadius: 5, pointHoverRadius: 7 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
+                responsive: true, maintainAspectRatio: true,
                 plugins: { legend: { display: true } },
-                scales: { y: { beginAtZero: true } }
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
+    },
+
+    renderAtRiskTable(items) {
+        const tbody = document.getElementById('dashAtRiskBody');
+        if (!tbody) return;
+        const atRisk = items.filter(i => this.isArrivalDelayed(i));
+
+        if (atRisk.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:20px">✅ No at-risk orders</td></tr>`;
+            return;
+        }
+
+        const today = new Date(); today.setHours(0,0,0,0);
+        tbody.innerHTML = atRisk.map(item => {
+            const arrival = new Date(item.arrivalDate);
+            const overdue = Math.ceil((today - arrival) / 86400000);
+            return `<tr>
+                <td>${item.serialNumber || '—'}</td>
+                <td><strong>${item.partNumber || '—'}</strong></td>
+                <td>${item.project || '—'}</td>
+                <td>${item.supplier || '—'}</td>
+                <td>${this.formatDate(item.arrivalDate)}</td>
+                <td><span class="overdue-badge">+${overdue} days</span></td>
+            </tr>`;
+        }).join('');
     },
 
     /* ── Persistence ──────────────────────────────────────── */

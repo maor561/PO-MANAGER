@@ -85,34 +85,90 @@
 
     <!-- ── Dashboard Section ──────────────────────────── -->
     <div id="dashboardSection" class="dashboard-section hidden">
-        <div class="dashboard-summary">
-            <div class="summary-card">
-                <div class="summary-label">Total Orders</div>
-                <div class="summary-value" id="dashTotalOrders">0</div>
+
+        <!-- Date Filter -->
+        <div class="dash-date-filter">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <label>From:</label>
+            <input type="date" id="dashFromDate" onchange="app.renderDashboard()">
+            <label>To:</label>
+            <input type="date" id="dashToDate" onchange="app.renderDashboard()">
+            <button class="btn-link" onclick="app.clearDashDateFilter()">✕ Reset</button>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="dash-kpi-row">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon" style="background:#eff6ff">📦</div>
+                <div>
+                    <div class="dash-kpi-label">Total Orders</div>
+                    <div class="dash-kpi-value" id="dashTotalOrders">0</div>
+                </div>
             </div>
-            <div class="summary-card">
-                <div class="summary-label">Completed</div>
-                <div class="summary-value" id="dashCompleted">0</div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon" style="background:#f0fdf4">✅</div>
+                <div>
+                    <div class="dash-kpi-label">On-Time %</div>
+                    <div class="dash-kpi-value success" id="dashOnTime">0%</div>
+                </div>
             </div>
-            <div class="summary-card">
-                <div class="summary-label">On-Time %</div>
-                <div class="summary-value" id="dashOnTime">0%</div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon" style="background:#ecfeff">⚡</div>
+                <div>
+                    <div class="dash-kpi-label">Avg Lead Time</div>
+                    <div class="dash-kpi-value info" id="dashAvgLead">—</div>
+                </div>
             </div>
-            <div class="summary-card">
-                <div class="summary-label">Delayed</div>
-                <div class="summary-value at-risk" id="dashDelayed">0</div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon" style="background:#fef2f2">⚠️</div>
+                <div>
+                    <div class="dash-kpi-label">At-Risk Orders</div>
+                    <div class="dash-kpi-value danger" id="dashAtRisk">0</div>
+                </div>
+            </div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon" style="background:#fefce8">🏆</div>
+                <div>
+                    <div class="dash-kpi-label">Top Supplier</div>
+                    <div class="dash-kpi-value text" id="dashTopSupplier">—</div>
+                </div>
             </div>
         </div>
-        <div class="dashboard-charts">
+
+        <!-- Charts Row -->
+        <div class="dash-charts-row">
             <div class="chart-box">
                 <h4>Supplier Performance</h4>
-                <canvas id="supplierChart" height="200"></canvas>
+                <canvas id="supplierChart"></canvas>
             </div>
             <div class="chart-box">
-                <h4>Delivery Timeline</h4>
-                <canvas id="timelineChart" height="200"></canvas>
+                <h4>On-Time vs Late</h4>
+                <canvas id="onTimePieChart"></canvas>
+            </div>
+            <div class="chart-box chart-box-wide">
+                <h4>Delivery Trend</h4>
+                <canvas id="timelineChart"></canvas>
             </div>
         </div>
+
+        <!-- At-Risk Table -->
+        <div class="dash-atrisk-section">
+            <h4>⚠️ At-Risk Orders</h4>
+            <table class="dash-atrisk-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>P/N</th>
+                        <th>Project</th>
+                        <th>Supplier</th>
+                        <th>Arrival Date</th>
+                        <th>Days Overdue</th>
+                    </tr>
+                </thead>
+                <tbody id="dashAtRiskBody"></tbody>
+            </table>
+        </div>
+
     </div>
 
     <!-- ── Filter Bar ─────────────────────────────────── -->
