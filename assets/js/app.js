@@ -6,7 +6,6 @@ const DEFAULT_FIELDS = [
     { id: 'quantity',      name: 'Qty',              required: false, type: 'number'   },
     { id: 'project',       name: 'Project',          required: true,  type: 'text'     },
     { id: 'pd',            name: 'Purchase Req.',    required: false, type: 'date'     },
-    { id: 'po',            name: 'PO Date',          required: false, type: 'date'     },
     { id: 'supplier',      name: 'Supplier',         required: false, type: 'text'     },
     { id: 'wd',            name: 'Working Days',     required: false, type: 'number'   },
     { id: 'notes',         name: 'Notes',            required: false, type: 'textarea' }
@@ -14,6 +13,7 @@ const DEFAULT_FIELDS = [
 
 const DEFAULT_STAGES = [
     { id: 'poNumber', name: 'PO #',         key: 'poNumber',     type: 'text'                    },
+    { id: 'poDate',   name: 'PO Date',      key: 'po',           type: 'date'                    },
     { id: 'eq',       name: 'EQ',           key: 'eqDate',       completedKey: 'eqCompleted'      },
     { id: 'coc',      name: 'COC',          key: 'cocDate',      completedKey: 'cocCompleted'     },
     { id: 'arrival',  name: 'Arrival Date', key: 'arrivalDate',  completedKey: 'arrivalCompleted' },
@@ -544,6 +544,19 @@ const app = {
                     const val = (item[stage.key] || '').replace(/"/g, '&quot;');
                     html += `<td><input type="text" class="tracing-input" value="${val}" placeholder="—"
                                  onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)"></td>`;
+                } else if (stage.type === 'date') {
+                    const dateVal = item[stage.key] || '';
+                    let badge = '';
+                    if (stage.id === 'poDate') {
+                        const d = this.calculateDaysBetween(item.pd, dateVal);
+                        badge = d !== null ? `<span class="days-badge${d > 5 ? ' days-badge-warning' : ''}">${d}d from PR</span>` : '';
+                    }
+                    html += `<td>
+                        <div class="stage-cell">
+                            <input type="date" class="stage-date-input" value="${dateVal}"
+                                onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
+                            ${badge}
+                        </div></td>`;
                 } else {
                     const dateVal    = item[stage.key] || '';
                     const isCompleted = dateVal ? true : false;
