@@ -233,6 +233,10 @@ const app = {
         const item = this.items.find(i => i.id === itemId);
         if (!item) return;
         item[stageKey] = dateValue;
+        const stage = this.stages.find(s => s.key === stageKey);
+        if (stage && stage.completedKey) {
+            item[stage.completedKey] = dateValue ? true : false;
+        }
         await this.saveItems();
         this.renderItems();
     },
@@ -505,7 +509,7 @@ const app = {
                                  onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)"></td>`;
                 } else {
                     const dateVal    = item[stage.key] || '';
-                    const isCompleted = item[stage.completedKey] || false;
+                    const isCompleted = dateVal ? true : false;
                     let badge = '';
                     if (stage.id === 'hslwh') {
                         const d = this.calculateDaysBetween(item.po, dateVal);
@@ -514,8 +518,6 @@ const app = {
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     html += `<td>
                         <div class="${completedClass}">
-                            <input type="checkbox" class="stage-checkbox" ${isCompleted ? 'checked' : ''}
-                                onchange="app.updateStageStatus('${item.id}','${stage.key}','${stage.completedKey}',this.checked)">
                             <input type="date" class="stage-date-input" value="${dateVal}"
                                 onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
                             ${badge}
