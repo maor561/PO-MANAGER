@@ -241,7 +241,7 @@ const app = {
         const item = this.items.find(i => i.id === itemId);
         if (!item) return;
         item[completedKey] = checked;
-        item[dateKey] = checked ? new Date().toISOString().split('T')[0] : '';
+        // never touch the date — user controls it independently
         await this.saveItems();
         this.renderItems();
     },
