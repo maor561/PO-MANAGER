@@ -547,13 +547,15 @@ const app = {
                                  onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)"></td>`;
                 } else if (stage.type === 'date') {
                     const dateVal = item[stage.key] || '';
+                    const isCompleted = dateVal ? true : false;
                     let badge = '';
                     if (stage.id === 'poDate') {
                         const d = this.calculateDaysBetween(item.pd, dateVal);
                         badge = d !== null ? `<span class="days-badge${d > 5 ? ' days-badge-warning' : ''}">${d}d from PR</span>` : '';
                     }
+                    const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     html += `<td>
-                        <div class="stage-cell">
+                        <div class="${completedClass}">
                             <input type="date" class="stage-date-input" value="${dateVal}"
                                 onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
                             ${badge}
