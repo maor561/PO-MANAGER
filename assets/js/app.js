@@ -61,6 +61,40 @@ const app = {
     },
     closeSettings() { document.getElementById('settingsModal').classList.remove('show'); },
 
+    openSupplierStats() {
+        const tbody = document.getElementById('supplierStatsBody');
+        tbody.innerHTML = '';
+
+        // Get unique suppliers
+        const suppliers = [...new Set(this.items.map(i => i.supplier).filter(Boolean))].sort();
+
+        suppliers.forEach(supplier => {
+            const supplierItems = this.items.filter(i => i.supplier === supplier);
+            const completedItems = supplierItems.filter(i => i.hslwhDate && i.po);
+
+            let avgDays = '—';
+            if (completedItems.length > 0) {
+                const totalDays = completedItems.reduce((sum, item) => {
+                    const d = this.calculateDaysBetween(item.po, item.hslwhDate);
+                    return sum + (d !== null ? d : 0);
+                }, 0);
+                avgDays = (totalDays / completedItems.length).toFixed(1) + ' days';
+            }
+
+            const row = `<tr>
+                <td>${supplier}</td>
+                <td>${supplierItems.length}</td>
+                <td>${completedItems.length}</td>
+                <td><strong>${avgDays}</strong></td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+
+        document.getElementById('supplierStatsModal').classList.add('show');
+    },
+
+    closeSupplierStats() { document.getElementById('supplierStatsModal').classList.remove('show'); },
+
     switchSettingsTab(tab) {
         document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.settings-tab-btn').forEach(el => el.classList.remove('active'));
