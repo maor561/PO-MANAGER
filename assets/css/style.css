@@ -436,6 +436,10 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
     letter-spacing: .1px;
     width: fit-content;
 }
+.days-badge-warning {
+    background: var(--danger-lt);
+    color: var(--danger);
+}
 
 /* ─── Stage Cells ────────────────────────────────────────────── */
 .stage-cell {

@@ -485,7 +485,7 @@ const app = {
                     html += `<td class="${sticky}">
                         <div class="date-with-badge">
                             <span>${this.formatDate(item.po)}</span>
-                            ${d !== null ? `<span class="days-badge">${d}d from PR</span>` : ''}
+                            ${d !== null ? `<span class="days-badge${d > 5 ? ' days-badge-warning' : ''}">${d}d from PR</span>` : ''}
                         </div></td>`;
 
                 } else {
