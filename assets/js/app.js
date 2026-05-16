@@ -2,6 +2,7 @@
 const DEFAULT_FIELDS = [
     { id: 'serialNumber',  name: '#',               required: false, type: 'auto'     },
     { id: 'partNumber',    name: 'P/N',              required: true,  type: 'text'     },
+    { id: 'description',  name: 'Description',      required: false, type: 'text'     },
     { id: 'revision',      name: 'REV',              required: false, type: 'text'     },
     { id: 'quantity',      name: 'Qty',              required: false, type: 'number'   },
     { id: 'project',       name: 'Project',          required: true,  type: 'text'     },
