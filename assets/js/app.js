@@ -54,9 +54,11 @@ const app = {
                 const res = await fetch('/api/items');
                 if (!res.ok) return;
                 const fresh = await res.json();
-                const changed = JSON.stringify(fresh) !== JSON.stringify(this.items);
+                const byId = arr => JSON.stringify([...arr].sort((a,b) => a.id < b.id ? -1 : 1));
+                const changed = byId(fresh) !== byId(this.items);
                 if (changed) {
                     this.items = fresh;
+                    this.applyCurrentSort();
                     this.renderItems();
                     this.showRefreshIndicator();
                 }
@@ -501,22 +503,38 @@ const app = {
     },
 
     /* ── Sort ─────────────────────────────────────────────── */
+    applyCurrentSort() {
+        const { col, dir, isStage } = this.currentSort;
+        if (!col) return;
+        const asc = dir === 'asc';
+        if (isStage) {
+            this.items.sort((a, b) => {
+                const ad = a[col] || '', bd = b[col] || '';
+                if (!ad && bd) return asc ? 1 : -1;
+                if (ad && !bd) return asc ? -1 : 1;
+                if (!ad && !bd) return 0;
+                const diff = new Date(ad) - new Date(bd);
+                return asc ? diff : -diff;
+            });
+        } else {
+            this.items.sort((a, b) => {
+                let av = a[col] ?? '', bv = b[col] ?? '';
+                if (/^\d{4}-\d{2}-\d{2}$/.test(String(av))) {
+                    av = new Date(av).getTime() || 0;
+                    bv = new Date(bv).getTime() || 0;
+                    return asc ? av - bv : bv - av;
+                }
+                av = String(av).toLowerCase();
+                bv = String(bv).toLowerCase();
+                return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+            });
+        }
+    },
+
     sortByColumn(col) {
         const isAsc = !(this.currentSort.col === col && !this.currentSort.isStage && this.currentSort.dir === 'asc');
         this.currentSort = { col, dir: isAsc ? 'asc' : 'desc', isStage: false };
-
-        this.items.sort((a, b) => {
-            let av = a[col] ?? '', bv = b[col] ?? '';
-            if (/^\d{4}-\d{2}-\d{2}$/.test(String(av))) {
-                av = new Date(av).getTime() || 0;
-                bv = new Date(bv).getTime() || 0;
-                return isAsc ? av - bv : bv - av;
-            }
-            av = String(av).toLowerCase();
-            bv = String(bv).toLowerCase();
-            return isAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-        });
-
+        this.applyCurrentSort();
         this.renderParentHeader();
         this.renderItems();
     },
@@ -524,16 +542,7 @@ const app = {
     sortByStageKey(stageKey) {
         const isAsc = !(this.currentSort.col === stageKey && this.currentSort.isStage && this.currentSort.dir === 'asc');
         this.currentSort = { col: stageKey, dir: isAsc ? 'asc' : 'desc', isStage: true };
-
-        this.items.sort((a, b) => {
-            const ad = a[stageKey] || '', bd = b[stageKey] || '';
-            if (!ad && bd) return isAsc ? 1 : -1;
-            if (ad && !bd) return isAsc ? -1 : 1;
-            if (!ad && !bd) return 0;
-            const diff = new Date(ad) - new Date(bd);
-            return isAsc ? diff : -diff;
-        });
-
+        this.applyCurrentSort();
         this.renderParentHeader();
         this.renderItems();
     },
