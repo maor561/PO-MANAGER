@@ -43,6 +43,7 @@ const app = {
         this.renderItems();
         this.renderFieldsSettings();
         this.renderStagesSettings();
+        this.setupTablePan();
         this.startAutoRefresh();
     },
 
@@ -457,6 +458,33 @@ const app = {
         return wrap;
     },
 
+    autoResizeInput(input) {
+        const len = Math.max((input.value || '').length + 1, 4);
+        input.style.width = len + 'ch';
+    },
+
+    setupTablePan() {
+        const wrapper = document.querySelector('.table-wrapper');
+        if (!wrapper) return;
+        let isDown = false, startX, scrollLeft;
+        wrapper.addEventListener('mousedown', e => {
+            if (e.target.closest('input, button, a, select, textarea, label')) return;
+            isDown = true;
+            wrapper.classList.add('is-panning');
+            startX = e.pageX - wrapper.offsetLeft;
+            scrollLeft = wrapper.scrollLeft;
+            e.preventDefault();
+        });
+        wrapper.addEventListener('mouseleave', () => { isDown = false; wrapper.classList.remove('is-panning'); });
+        wrapper.addEventListener('mouseup', () => { isDown = false; wrapper.classList.remove('is-panning'); });
+        wrapper.addEventListener('mousemove', e => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - wrapper.offsetLeft;
+            wrapper.scrollLeft = scrollLeft - (x - startX);
+        });
+    },
+
     getPromiseDateHistory(item) {
         if (!item.promiseDateHistory || item.promiseDateHistory.length === 0) return '';
         let history = 'Promise Date History:\n';
@@ -709,6 +737,8 @@ const app = {
                     html += `<td>
                         <div class="${completedClass}">
                             <input type="text" class="tracing-input" value="${val}" placeholder="—"
+                                 style="width:${Math.max((val||'').length + 1, 6)}ch"
+                                 oninput="app.autoResizeInput(this)"
                                  onchange="app.updateTracingNumber('${item.id}','${stage.key}',this.value)">
                         </div></td>`;
                 } else if (stage.type === 'date') {
