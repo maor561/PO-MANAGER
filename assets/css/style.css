@@ -467,6 +467,22 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
     margin-left: 2px;
 }
 
+/* ─── Date field wrapper (DD/MM/YYYY text + hidden native picker) ── */
+.date-field-wrap {
+    position: relative;
+    display: inline-flex;
+    width: 100%;
+}
+.date-picker-hidden {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px; height: 1px;
+    top: 0; left: 0;
+    padding: 0; border: 0;
+    overflow: hidden;
+}
+
 /* ─── Stage Cells ────────────────────────────────────────────── */
 .stage-cell {
     display: flex; flex-direction: column;

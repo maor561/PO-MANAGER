@@ -176,18 +176,22 @@ const app = {
             label.textContent = field.name + (field.required ? ' *' : '');
             group.appendChild(label);
 
-            let input;
-            if (field.type === 'textarea') {
-                input = document.createElement('textarea');
-                input.rows = 2;
+            if (field.type === 'date') {
+                group.appendChild(this._makeDateFieldWrap(field.id, '', field.required));
             } else {
-                input = document.createElement('input');
-                input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
-                if (field.type === 'number') input.min = '0';
+                let input;
+                if (field.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 2;
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.type === 'number' ? 'number' : 'text';
+                    if (field.type === 'number') input.min = '0';
+                }
+                input.id = field.id;
+                if (field.required) input.required = true;
+                group.appendChild(input);
             }
-            input.id = field.id;
-            if (field.required) input.required = true;
-            group.appendChild(input);
             grid.appendChild(group);
         });
 
@@ -220,19 +224,23 @@ const app = {
             label.textContent = field.name + (field.required ? ' *' : '');
             group.appendChild(label);
 
-            let input;
-            if (field.type === 'textarea') {
-                input = document.createElement('textarea');
-                input.rows = 2;
+            if (field.type === 'date') {
+                group.appendChild(this._makeDateFieldWrap('edit_' + field.id, item[field.id] ?? '', field.required));
             } else {
-                input = document.createElement('input');
-                input.type = field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text';
-                if (field.type === 'number') input.min = '0';
+                let input;
+                if (field.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 2;
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.type === 'number' ? 'number' : 'text';
+                    if (field.type === 'number') input.min = '0';
+                }
+                input.id = 'edit_' + field.id;
+                input.value = item[field.id] ?? '';
+                if (field.required) input.required = true;
+                group.appendChild(input);
             }
-            input.id = 'edit_' + field.id;
-            input.value = item[field.id] ?? '';
-            if (field.required) input.required = true;
-            group.appendChild(input);
             grid.appendChild(group);
         });
 
@@ -256,7 +264,9 @@ const app = {
             const value = input.value.trim();
             if (field.required && !value) { input.classList.add('error'); valid = false; return; }
             input.classList.remove('error');
-            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0) : value;
+            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0)
+                           : field.type === 'date'   ? (this.displayToIso(value) || value)
+                           : value;
         });
 
         if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
@@ -283,7 +293,9 @@ const app = {
             const value = input.value.trim();
             if (field.required && !value) { input.classList.add('error'); valid = false; return; }
             input.classList.remove('error');
-            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0) : value;
+            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0)
+                           : field.type === 'date'   ? (this.displayToIso(value) || value)
+                           : value;
         });
 
         if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
@@ -396,8 +408,53 @@ const app = {
 
     formatDate(dateStr) {
         if (!dateStr) return '';
-        const d = new Date(dateStr);
-        return isNaN(d) ? dateStr : d.toLocaleDateString('en-GB');
+        return this.isoToDisplay(dateStr) || dateStr;
+    },
+
+    isoToDisplay(iso) {
+        if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    },
+
+    displayToIso(display) {
+        if (!display) return '';
+        const match = display.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!match) return '';
+        return `${match[3]}-${match[2].padStart(2,'0')}-${match[1].padStart(2,'0')}`;
+    },
+
+    openDatePicker(textInput) {
+        const hidden = textInput.nextElementSibling;
+        if (hidden && hidden.type === 'date') {
+            try { hidden.showPicker(); } catch(e) {}
+        }
+    },
+
+    onHiddenDateChange(hiddenInput) {
+        const textInput = hiddenInput.previousElementSibling;
+        if (textInput) {
+            textInput.value = this.isoToDisplay(hiddenInput.value);
+            textInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    },
+
+    _makeDateFieldWrap(id, isoValue, required) {
+        const wrap = document.createElement('span');
+        wrap.className = 'date-field-wrap';
+        const text = document.createElement('input');
+        text.type = 'text'; text.id = id;
+        text.value = this.isoToDisplay(isoValue || '');
+        text.placeholder = 'DD/MM/YYYY'; text.maxLength = 10;
+        text.setAttribute('onclick', 'app.openDatePicker(this)');
+        if (required) text.required = true;
+        const hidden = document.createElement('input');
+        hidden.type = 'date'; hidden.className = 'date-picker-hidden';
+        hidden.value = isoValue || '';
+        hidden.setAttribute('onchange', 'app.onHiddenDateChange(this)');
+        hidden.tabIndex = -1;
+        wrap.appendChild(text); wrap.appendChild(hidden);
+        return wrap;
     },
 
     getPromiseDateHistory(item) {
@@ -680,8 +737,14 @@ const app = {
 
                     html += `<td>
                         <div class="${completedClass}">
-                            <input type="date" class="stage-date-input" value="${dateVal}"
-                                onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
+                            <span class="date-field-wrap">
+                                <input type="text" class="stage-date-input" value="${this.isoToDisplay(dateVal)}"
+                                    placeholder="DD/MM/YYYY" maxlength="10"
+                                    onclick="app.openDatePicker(this)"
+                                    onchange="app.updateStageDate('${item.id}','${stage.key}',app.displayToIso(this.value))">
+                                <input type="date" class="date-picker-hidden" value="${dateVal}"
+                                    onchange="app.onHiddenDateChange(this)" tabindex="-1">
+                            </span>
                             ${clearBtn}
                             ${badge}${historyIndicator}
                         </div></td>`;
@@ -696,8 +759,14 @@ const app = {
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     html += `<td>
                         <div class="${completedClass}">
-                            <input type="date" class="stage-date-input" value="${dateVal}"
-                                onchange="app.updateStageDate('${item.id}','${stage.key}',this.value)">
+                            <span class="date-field-wrap">
+                                <input type="text" class="stage-date-input" value="${this.isoToDisplay(dateVal)}"
+                                    placeholder="DD/MM/YYYY" maxlength="10"
+                                    onclick="app.openDatePicker(this)"
+                                    onchange="app.updateStageDate('${item.id}','${stage.key}',app.displayToIso(this.value))">
+                                <input type="date" class="date-picker-hidden" value="${dateVal}"
+                                    onchange="app.onHiddenDateChange(this)" tabindex="-1">
+                            </span>
                             ${badge}
                         </div></td>`;
                 }
