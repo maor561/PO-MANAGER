@@ -596,7 +596,7 @@ const app = {
             ? `${this.items.length} items`
             : `${items.length} of ${this.items.length} items`;
 
-        items.forEach(item => {
+        items.forEach((item, rowIndex) => {
             const row = document.createElement('tr');
             if (item.hslwhDate)                   row.classList.add('row-completed');
             else if (this.isArrivalDelayed(item)) row.classList.add('row-delayed');
@@ -608,7 +608,7 @@ const app = {
                 const sticky = i === 0 ? 'sticky-col sticky-col-1' : i === 1 ? 'sticky-col sticky-col-2' : '';
 
                 if (field.id === 'serialNumber') {
-                    html += `<td class="${sticky} col-serial">${item.serialNumber || ''}</td>`;
+                    html += `<td class="${sticky} col-serial">${rowIndex + 1}</td>`;
 
                 } else if (field.id === 'pd') {
                     html += `<td class="${sticky}">${this.formatDate(item.pd)}</td>`;
