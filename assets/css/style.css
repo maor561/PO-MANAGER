@@ -1054,6 +1054,26 @@ input[type="file"] { display: none; }
     /* View tabs */
     .view-tab { font-size: 13px; padding: 9px 18px; }
 
+    /* Dashboard */
+    .dashboard-section { padding: 12px; }
+    .dash-date-filter {
+        flex-direction: column; align-items: stretch;
+        gap: 8px; padding: 12px; margin-bottom: 14px;
+    }
+    .dash-date-filter input { font-size: 15px; padding: 9px 10px; min-height: 44px; }
+    .dash-kpi-row { grid-template-columns: 1fr 1fr !important; gap: 10px; margin-bottom: 14px; }
+    .dash-kpi-card { padding: 14px 12px; }
+    .dash-kpi-label { font-size: 11px; }
+    .dash-kpi-value { font-size: 20px; }
+    .dash-kpi-icon { width: 36px; height: 36px; font-size: 16px; }
+    .dash-charts-row { grid-template-columns: 1fr !important; gap: 12px; }
+    .supplier-split { grid-template-columns: 1fr !important; gap: 12px; }
+    .chart-box { padding: 14px 12px; }
+    .chart-box h4 { font-size: 13px; }
+    .dash-atrisk-section { padding: 14px 12px; overflow-x: auto; }
+    .dash-atrisk-table { font-size: 12px; min-width: 460px; }
+    .dash-atrisk-table th, .dash-atrisk-table td { padding: 8px 8px; }
+
     /* Table hidden → card view active */
     .table-wrapper { display: none !important; }
     .cards-wrapper { display: block !important; }

@@ -1030,6 +1030,7 @@ const app = {
         const dashboard = document.getElementById('dashboardSection');
         const filterBar = document.querySelector('.filter-bar');
         const tableWrapper = document.querySelector('.table-wrapper');
+        const cardsWrapper = document.getElementById('cardsWrapper');
         const tableTab = document.getElementById('tableTabBtn');
         const dashTab = document.getElementById('dashboardTabBtn');
 
@@ -1037,13 +1038,15 @@ const app = {
             dashboard.classList.remove('hidden');
             filterBar.style.display = 'none';
             tableWrapper.style.display = 'none';
+            if (cardsWrapper) cardsWrapper.style.setProperty('display', 'none', 'important');
             tableTab.classList.remove('active');
             dashTab.classList.add('active');
             this.renderDashboard();
         } else {
             dashboard.classList.add('hidden');
-            filterBar.style.display = 'flex';
-            tableWrapper.style.display = 'block';
+            filterBar.style.display = '';
+            tableWrapper.style.display = '';
+            if (cardsWrapper) cardsWrapper.style.removeProperty('display');
             tableTab.classList.add('active');
             dashTab.classList.remove('active');
         }
