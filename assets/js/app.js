@@ -466,22 +466,25 @@ const app = {
     setupTablePan() {
         const wrapper = document.querySelector('.table-wrapper');
         if (!wrapper) return;
-        let isDown = false, startX, scrollLeft;
+        let isDown = false, isPanning = false, startX, scrollLeft;
         wrapper.addEventListener('mousedown', e => {
             if (e.target.closest('input, button, a, select, textarea, label')) return;
             isDown = true;
-            wrapper.classList.add('is-panning');
+            isPanning = false;
             startX = e.pageX - wrapper.offsetLeft;
             scrollLeft = wrapper.scrollLeft;
-            e.preventDefault();
         });
-        wrapper.addEventListener('mouseleave', () => { isDown = false; wrapper.classList.remove('is-panning'); });
-        wrapper.addEventListener('mouseup', () => { isDown = false; wrapper.classList.remove('is-panning'); });
+        wrapper.addEventListener('mouseleave', () => { isDown = false; isPanning = false; wrapper.classList.remove('is-panning'); });
+        wrapper.addEventListener('mouseup', () => { isDown = false; isPanning = false; wrapper.classList.remove('is-panning'); });
         wrapper.addEventListener('mousemove', e => {
             if (!isDown) return;
-            e.preventDefault();
             const x = e.pageX - wrapper.offsetLeft;
-            wrapper.scrollLeft = scrollLeft - (x - startX);
+            const dx = x - startX;
+            if (!isPanning && Math.abs(dx) < 5) return;
+            isPanning = true;
+            wrapper.classList.add('is-panning');
+            e.preventDefault();
+            wrapper.scrollLeft = scrollLeft - dx;
         });
     },
 
