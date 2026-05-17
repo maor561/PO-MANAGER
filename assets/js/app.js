@@ -573,8 +573,10 @@ const app = {
         childRow.innerHTML = ch;
 
         requestAnimationFrame(() => {
+            const topbarH = document.querySelector('.topbar')?.getBoundingClientRect().height || 0;
             const ph = parentRow.getBoundingClientRect().height;
-            childRow.querySelectorAll('th').forEach(th => { th.style.top = ph + 'px'; });
+            parentRow.querySelectorAll('th').forEach(th => { th.style.top = topbarH + 'px'; });
+            childRow.querySelectorAll('th').forEach(th => { th.style.top = (topbarH + ph) + 'px'; });
         });
     },
 
