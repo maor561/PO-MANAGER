@@ -44,6 +44,7 @@ const app = {
         this.renderFieldsSettings();
         this.renderStagesSettings();
         this.setupTablePan();
+        this.setupMobileUI();
         this.startAutoRefresh();
     },
 
@@ -488,6 +489,84 @@ const app = {
         });
     },
 
+    isMobile() {
+        return window.innerWidth <= 480;
+    },
+
+    renderItemCards(items) {
+        const wrap = document.getElementById('cardsWrapper');
+        if (!wrap) return;
+        if (!items.length) {
+            wrap.innerHTML = '<div class="cards-empty">No items to display</div>';
+            return;
+        }
+        let html = '';
+        items.forEach((item, idx) => {
+            const done    = !!item.hslwhDate;
+            const delayed = this.isArrivalDelayed(item);
+            const soon    = this.isArrivingSoon(item);
+            const cardCls = done ? 'card-completed' : delayed ? 'card-delayed' : soon ? 'card-soon' : '';
+            const stCls   = done ? 'badge-success'  : delayed ? 'badge-danger'  : soon ? 'badge-warning' : 'badge-info';
+            const stTxt   = done ? 'Completed'       : delayed ? 'Delayed'       : soon ? 'Due Soon'      : 'In Progress';
+
+            const stagePills = this.stages.map(stage => {
+                const isDone = stage.completedKey ? !!item[stage.completedKey] : !!item[stage.key];
+                const name = stage.name.replace(' Date','').replace(' #','#');
+                return `<span class="stage-pill ${isDone ? 'pill-done' : 'pill-pending'}">${isDone ? '✓' : '○'} ${name}</span>`;
+            }).join('');
+
+            const dets = [];
+            if (item.poNumber)       dets.push(['PO #',    item.poNumber]);
+            if (item.promiseDate)    dets.push(['Promise', this.isoToDisplay(item.promiseDate)]);
+            if (item.po)             dets.push(['PO Date', this.isoToDisplay(item.po)]);
+            if (item.arrivalDate)    dets.push(['Arrival', this.isoToDisplay(item.arrivalDate)]);
+            if (item.trackingNumber) dets.push(['Track #', item.trackingNumber]);
+            const detHtml = dets.map(([k,v]) =>
+                `<div class="card-kv"><span class="card-k">${k}</span><span class="card-v">${v}</span></div>`
+            ).join('');
+
+            const meta = [item.project, item.supplier, item.quantity ? 'Qty: '+item.quantity : ''].filter(Boolean).join(' · ');
+            html += `
+<div class="po-card ${cardCls}">
+  <div class="card-top">
+    <span class="card-num">${idx+1}</span>
+    <span class="card-pn">${item.partNumber || '—'}</span>
+    <span class="card-badge ${stCls}">${stTxt}</span>
+    <button class="card-edit-btn" onclick="app.openEditModal('${item.id}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit
+    </button>
+  </div>
+  <div class="card-mid">
+    ${item.description ? `<div class="card-desc">${item.description}${item.revision ? ` <em>Rev.${item.revision}</em>` : ''}</div>` : ''}
+    ${meta ? `<div class="card-meta">${meta}</div>` : ''}
+  </div>
+  ${detHtml ? `<div class="card-details">${detHtml}</div>` : ''}
+  <div class="card-stages">${stagePills}</div>
+</div>`;
+        });
+        wrap.innerHTML = html;
+    },
+
+    toggleMobileOverflow() {
+        const menu = document.getElementById('mobileOverflowMenu');
+        if (menu) menu.classList.toggle('show');
+    },
+
+    setupMobileUI() {
+        document.addEventListener('click', e => {
+            const menu = document.getElementById('mobileOverflowMenu');
+            const btn  = document.getElementById('mobileOverflowBtn');
+            if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target))
+                menu.classList.remove('show');
+        });
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => this.renderItems(), 200);
+        });
+    },
+
     getPromiseDateHistory(item) {
         if (!item.promiseDateHistory || item.promiseDateHistory.length === 0) return '';
         let history = 'Promise Date History:\n';
@@ -680,16 +759,20 @@ const app = {
         this.updateDashboard();
         this.populateFilterDropdowns();
 
-        const tbody = document.getElementById('itemsBody');
-        tbody.innerHTML = '';
-
         const items = this.getDisplayItems();
 
-        // Results count
         const rc = document.getElementById('filterResults');
         if (rc) rc.textContent = items.length === this.items.length
             ? `${this.items.length} items`
             : `${items.length} of ${this.items.length} items`;
+
+        if (this.isMobile()) {
+            this.renderItemCards(items);
+            return;
+        }
+
+        const tbody = document.getElementById('itemsBody');
+        tbody.innerHTML = '';
 
         items.forEach((item, rowIndex) => {
             const row = document.createElement('tr');
