@@ -885,13 +885,11 @@ input[type="file"] { display: none; }
 /* ─── Card View (mobile) ─────────────────────────────────────── */
 .cards-wrapper {
     display: none;
-    flex-direction: column;
     padding: 12px 14px 28px;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
     background: var(--gray-100);
-    gap: 0;
 }
 .cards-empty {
     text-align: center; color: var(--gray-400);
@@ -1058,7 +1056,7 @@ input[type="file"] { display: none; }
 
     /* Table hidden → card view active */
     .table-wrapper { display: none !important; }
-    .cards-wrapper { display: flex !important; }
+    .cards-wrapper { display: block !important; }
 
     /* Bottom-sheet modal */
     .modal { align-items: flex-end; }
