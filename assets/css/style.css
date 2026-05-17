@@ -528,7 +528,7 @@ tbody tr.row-delayed:hover { background: rgba(220,38,38,.07) !important; }
 
 /* ─── Tracing Input ──────────────────────────────────────────── */
 .tracing-input {
-    width: 100%; min-width: 92px;
+    width: 100%; min-width: 150px;
     padding: 5px 7px;
     border: 1px solid var(--gray-200);
     border-radius: 4px;
