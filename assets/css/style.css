@@ -748,7 +748,26 @@ input[type="file"] { display: none; }
     font-size: 14px !important;
     color: var(--primary) !important;
 }
-.chart-hero canvas { max-height: 320px !important; }
+.supplier-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+.supplier-half { display: flex; flex-direction: column; }
+.chart-sub {
+    font-size: 11px; font-weight: 600; color: var(--gray-500);
+    text-transform: uppercase; letter-spacing: .4px;
+    margin-bottom: 10px;
+}
+.supplier-canvas-wrap {
+    position: relative;
+    overflow-y: auto;
+    min-height: 120px;
+}
+.supplier-canvas-wrap canvas { width: 100% !important; }
+@media (max-width: 900px) {
+    .supplier-split { grid-template-columns: 1fr; }
+}
 
 /* Secondary charts grid */
 .dash-charts-row {

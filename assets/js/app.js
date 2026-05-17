@@ -922,7 +922,6 @@ const app = {
     },
 
     renderSupplierChart(items) {
-        // Group by supplier: count orders + avg lead time
         const supplierData = {};
         items.forEach(i => {
             if (!i.supplier) return;
@@ -934,33 +933,60 @@ const app = {
             }
         });
 
-        const sorted = Object.entries(supplierData).sort((a,b) => b[1].count - a[1].count).slice(0,8);
-        const labels  = sorted.map(e => e[0]);
-        const counts  = sorted.map(e => e[1].count);
-        const avgDays = sorted.map(e => e[1].withDays > 0 ? +(e[1].totalDays / e[1].withDays).toFixed(1) : null);
+        const byOrders = Object.entries(supplierData).sort((a,b) => b[1].count - a[1].count);
+        const byLead   = Object.entries(supplierData)
+            .filter(e => e[1].withDays > 0)
+            .sort((a,b) => b[1].totalDays/b[1].withDays - a[1].totalDays/a[1].withDays);
 
-        const ctx = document.getElementById('supplierChart');
-        if (!ctx) return;
-        if (this.dashboardCharts.supplier) this.dashboardCharts.supplier.destroy();
+        const rowH = 28;
+        const minH = 120;
 
-        this.dashboardCharts.supplier = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    { label: 'Orders', data: counts, backgroundColor: '#2563eb', borderRadius: 4, yAxisID: 'y' },
-                    { label: 'Avg Lead Days', data: avgDays, backgroundColor: '#f59e0b', borderRadius: 4, yAxisID: 'y2' }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: true,
-                plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
-                scales: {
-                    y:  { beginAtZero: true, position: 'left',  title: { display: true, text: 'Orders' } },
-                    y2: { beginAtZero: true, position: 'right', title: { display: true, text: 'Avg Days' }, grid: { drawOnChartArea: false } }
+        const makeHBar = (canvasId, wrapId, labels, data, colors, fmt) => {
+            const ctx = document.getElementById(canvasId);
+            const wrap = document.getElementById(wrapId);
+            if (!ctx || !wrap) return null;
+            const h = Math.max(minH, labels.length * rowH);
+            wrap.style.height = h + 'px';
+            return new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, barThickness: 18 }] },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                        y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                    }
                 }
-            }
+            });
+        };
+
+        if (this.dashboardCharts.supplierOrders) this.dashboardCharts.supplierOrders.destroy();
+        if (this.dashboardCharts.supplierLead)   this.dashboardCharts.supplierLead.destroy();
+
+        this.dashboardCharts.supplierOrders = makeHBar(
+            'supplierOrdersChart', 'supplierOrdersWrap',
+            byOrders.map(e => e[0]),
+            byOrders.map(e => e[1].count),
+            byOrders.map(() => '#2563eb'),
+            v => v + ' orders'
+        );
+
+        const leadColors = byLead.map(e => {
+            const d = e[1].totalDays / e[1].withDays;
+            return d <= 30 ? '#16a34a' : d <= 60 ? '#f59e0b' : '#dc2626';
         });
+        this.dashboardCharts.supplierLead = makeHBar(
+            'supplierLeadChart', 'supplierLeadWrap',
+            byLead.map(e => e[0]),
+            byLead.map(e => +(e[1].totalDays / e[1].withDays).toFixed(1)),
+            leadColors,
+            v => v + ' days'
+        );
     },
 
     renderOnTimePie(onTime, late) {

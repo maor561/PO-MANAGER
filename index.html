@@ -138,8 +138,21 @@
 
         <!-- Supplier Performance - Hero Chart -->
         <div class="chart-box chart-hero">
-            <h4>📊 Supplier Performance — Orders & Avg Lead Time</h4>
-            <canvas id="supplierChart"></canvas>
+            <h4>📊 Supplier Performance</h4>
+            <div class="supplier-split">
+                <div class="supplier-half">
+                    <p class="chart-sub">Orders</p>
+                    <div class="supplier-canvas-wrap" id="supplierOrdersWrap">
+                        <canvas id="supplierOrdersChart"></canvas>
+                    </div>
+                </div>
+                <div class="supplier-half">
+                    <p class="chart-sub">Avg Lead Time (days)</p>
+                    <div class="supplier-canvas-wrap" id="supplierLeadWrap">
+                        <canvas id="supplierLeadChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Secondary Charts Row -->
