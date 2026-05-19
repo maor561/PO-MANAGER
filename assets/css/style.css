@@ -604,6 +604,23 @@ form { padding: 18px 22px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group-full { grid-column: 1 / -1; }
 
+.cost-wrap { display: flex; gap: 4px; align-items: stretch; }
+.cost-wrap input[type="number"] { flex: 1; min-width: 0; }
+.currency-select {
+    width: 52px;
+    flex-shrink: 0;
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    text-align: center;
+}
+
 label {
     font-size: 11px; font-weight: 700;
     color: var(--gray-600); text-transform: uppercase; letter-spacing: .3px;

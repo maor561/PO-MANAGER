@@ -179,7 +179,9 @@ const app = {
             label.textContent = field.name + (field.required ? ' *' : '');
             group.appendChild(label);
 
-            if (field.type === 'date') {
+            if (field.id === 'cost') {
+                group.appendChild(this._makeCostWrap('cost', 'currency', ''));
+            } else if (field.type === 'date') {
                 group.appendChild(this._makeDateFieldWrap(field.id, '', field.required));
             } else {
                 let input;
@@ -199,6 +201,24 @@ const app = {
         });
 
         container.appendChild(grid);
+    },
+
+    _makeCostWrap(costId, currencyId, item) {
+        const wrap = document.createElement('div');
+        wrap.className = 'cost-wrap';
+        const sel = document.createElement('select');
+        sel.id = currencyId; sel.className = 'currency-select';
+        [['ILS','₪'], ['USD','$'], ['EUR','€']].forEach(([v, t]) => {
+            const o = document.createElement('option');
+            o.value = v; o.textContent = t;
+            if (item && v === (item.currency || 'ILS')) o.selected = true;
+            sel.appendChild(o);
+        });
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.id = costId; inp.min = '0'; inp.step = '0.01';
+        if (item) inp.value = item.cost || '';
+        wrap.appendChild(sel); wrap.appendChild(inp);
+        return wrap;
     },
 
     closeAddModal() { document.getElementById('addModal').classList.remove('show'); },
@@ -227,7 +247,9 @@ const app = {
             label.textContent = field.name + (field.required ? ' *' : '');
             group.appendChild(label);
 
-            if (field.type === 'date') {
+            if (field.id === 'cost') {
+                group.appendChild(this._makeCostWrap('edit_cost', 'edit_currency', item));
+            } else if (field.type === 'date') {
                 group.appendChild(this._makeDateFieldWrap('edit_' + field.id, item[field.id] ?? '', field.required));
             } else {
                 let input;
@@ -267,9 +289,15 @@ const app = {
             const value = input.value.trim();
             if (field.required && !value) { input.classList.add('error'); valid = false; return; }
             input.classList.remove('error');
-            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0)
-                           : field.type === 'date'   ? (this.displayToIso(value) || value)
-                           : value;
+            if (field.id === 'cost') {
+                item.cost = parseFloat(value) || 0;
+                const cur = document.getElementById('edit_currency');
+                if (cur) item.currency = cur.value || 'ILS';
+            } else {
+                item[field.id] = field.type === 'number' ? (parseFloat(value) || 0)
+                               : field.type === 'date'   ? (this.displayToIso(value) || value)
+                               : value;
+            }
         });
 
         if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
@@ -296,9 +324,15 @@ const app = {
             const value = input.value.trim();
             if (field.required && !value) { input.classList.add('error'); valid = false; return; }
             input.classList.remove('error');
-            item[field.id] = field.type === 'number' ? (parseFloat(value) || 0)
-                           : field.type === 'date'   ? (this.displayToIso(value) || value)
-                           : value;
+            if (field.id === 'cost') {
+                item.cost = parseFloat(value) || 0;
+                const cur = document.getElementById('currency');
+                if (cur) item.currency = cur.value || 'ILS';
+            } else {
+                item[field.id] = field.type === 'number' ? (parseFloat(value) || 0)
+                               : field.type === 'date'   ? (this.displayToIso(value) || value)
+                               : value;
+            }
         });
 
         if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
@@ -386,6 +420,7 @@ const app = {
             revision:    src.revision,
             quantity:    src.quantity,
             cost:        src.cost,
+            currency:    src.currency,
             project:     src.project,
             pd:          src.pd,
             supplier:    src.supplier,
@@ -548,7 +583,9 @@ const app = {
                 `<div class="card-kv"><span class="card-k">${k}</span><span class="card-v">${v}</span></div>`
             ).join('');
 
-            const meta = [item.project, item.supplier, item.quantity ? 'Qty: '+item.quantity : ''].filter(Boolean).join(' · ');
+            const costSym = { ILS: '₪', USD: '$', EUR: '€' }[item.currency || 'ILS'] || '₪';
+            const costStr = item.cost != null && item.cost !== '' ? `${costSym}${Number(item.cost).toLocaleString()}` : '';
+            const meta = [item.project, item.supplier, item.quantity ? 'Qty: '+item.quantity : '', costStr].filter(Boolean).join(' · ');
             html += `
 <div class="po-card ${cardCls}">
   <div class="card-top">
@@ -822,6 +859,11 @@ const app = {
                             ${d !== null ? `<span class="days-badge${d > 5 ? ' days-badge-warning' : ''}">${d}d from PR</span>` : ''}
                         </div></td>`;
 
+                } else if (field.id === 'cost') {
+                    const sym = { ILS: '₪', USD: '$', EUR: '€' }[item.currency || 'ILS'] || '₪';
+                    const val = item.cost != null && item.cost !== '' ? `${sym}${Number(item.cost).toLocaleString()}` : '';
+                    html += `<td class="${sticky}">${val}</td>`;
+
                 } else if (field.id === 'notes') {
                     const note = item.notes || '';
                     const short = note.length > 20 ? note.slice(0, 20) + '…' : note;
@@ -964,7 +1006,10 @@ const app = {
         try {
             const data = this.items.map(item => {
                 const row = {};
-                this.fields.forEach(f => { row[f.name] = item[f.id] ?? ''; });
+                this.fields.forEach(f => {
+                    row[f.name] = item[f.id] ?? '';
+                    if (f.id === 'cost') row['Currency'] = item.currency || 'ILS';
+                });
                 row['Quot. Date'] = this.calculateQuotationDate(item.po, item.wd);
                 this.stages.forEach(s => {
                     row[s.name] = item[s.key] || '';
@@ -1032,7 +1077,10 @@ const app = {
                 this.items = []; // Clear all existing items
                 data.forEach(row => {
                     const item = { id: String(Date.now() + Math.random()), serialNumber: this.getNextSerial(), createdAt: new Date().toISOString() };
-                    this.fields.forEach(f => { if (f.type !== 'auto') item[f.id] = row[f.name] || ''; });
+                    this.fields.forEach(f => {
+                        if (f.type !== 'auto') item[f.id] = row[f.name] || '';
+                        if (f.id === 'cost') item.currency = row['Currency'] || 'ILS';
+                    });
                     this.stages.forEach(s => {
                         item[s.key] = row[s.name] || '';
                         if (s.completedKey) item[s.completedKey] = row[s.name + ' Done'] === 'Yes';
