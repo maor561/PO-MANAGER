@@ -192,6 +192,15 @@ button:active { opacity: .85; }
 }
 .btn-icon-edit:hover { background: #bfdbfe; }
 
+.btn-icon-dupe {
+    padding: 5px 6px;
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius);
+}
+.btn-icon-dupe:hover { background: #bbf7d0; }
+
 .btn-icon-danger {
     padding: 5px 6px;
     background: var(--danger-lt);
@@ -380,7 +389,7 @@ table th:last-child { border-right: none; }
 .stage-header:hover { background: rgba(37,99,235,.11) !important; }
 .stage-header .sort-icon { color: rgba(37,99,235,.4); }
 
-.actions-th { text-align: center !important; width: 52px; }
+.actions-th { text-align: center !important; width: 80px; }
 
 /* ─── Sticky Columns ─────────────────────────────────────────── */
 .sticky-col-1 {

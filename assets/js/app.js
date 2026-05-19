@@ -375,6 +375,27 @@ const app = {
         this.renderItems();
     },
 
+    async duplicateItem(itemId) {
+        const src = this.items.find(i => i.id === itemId);
+        if (!src) return;
+        const copy = {
+            id: Date.now().toString(),
+            partNumber:  src.partNumber,
+            description: src.description,
+            revision:    src.revision,
+            quantity:    src.quantity,
+            project:     src.project,
+            pd:          src.pd,
+            supplier:    src.supplier,
+            wd:          src.wd,
+            notes:       src.notes,
+        };
+        this.items.push(copy);
+        await this.saveItems();
+        this.renderItems();
+        this.showMessage('Item duplicated', 'success');
+    },
+
     async deleteItem(itemId) {
         const item = this.items.find(i => i.id === itemId);
         const label = item ? `P/N: ${item.partNumber || '?'} | Project: ${item.project || '?'}` : '';
@@ -895,6 +916,11 @@ const app = {
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                 </button>
+                <button class="btn-icon-dupe" onclick="app.duplicateItem('${item.id}')" title="Duplicate item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                </button>
                 <button class="btn-icon-danger" onclick="app.deleteItem('${item.id}')" title="Delete item">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
@@ -904,6 +930,10 @@ const app = {
             </td>`;
 
             row.innerHTML = html;
+            row.addEventListener('dblclick', e => {
+                if (e.target.closest('input, button, a, select, textarea')) return;
+                this.openEditModal(item.id);
+            });
             tbody.appendChild(row);
         });
     },
