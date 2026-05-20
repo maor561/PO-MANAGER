@@ -207,8 +207,13 @@ button:active { opacity: .85; }
 
 /* ── Desktop Card Grid ─────────────────────────────────── */
 .dcard-grid {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    align-content: start;
     gap: 16px;
     padding: 20px 0 32px;
 }
