@@ -253,132 +253,123 @@ button:active { opacity: .85; }
     display: grid;
     grid-template-columns: 1fr;
     align-content: start;
-    gap: 12px;
-    padding: 20px 0 32px;
+    gap: 6px;
+    padding: 16px 0 24px;
 }
 
 .dcard-empty { text-align: center; color: var(--gray-400); padding: 60px 0; font-size: 15px; }
 
 .dcard {
     background: white;
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid var(--gray-200, #e2e8f0);
     border-left: 4px solid var(--gray-300);
-    box-shadow: 0 1px 4px rgba(0,0,0,.06);
-    padding: 16px 18px;
-    display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    padding: 9px 14px 9px 12px;
+    display: flex; flex-direction: column; gap: 5px;
     cursor: default;
-    transition: box-shadow .2s, transform .2s;
+    transition: box-shadow .15s, border-left-color .15s;
 }
-.dcard:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10); transform: translateY(-2px); }
+.dcard:hover { box-shadow: 0 3px 12px rgba(0,0,0,.09); }
 
 .dcard-completed { border-left-color: #16a34a; }
 .dcard-delayed   { border-left-color: #dc2626; }
 .dcard-soon      { border-left-color: #f59e0b; }
 .dcard-progress  { border-left-color: #2563eb; }
 
-/* Card header */
+/* Card header — single row: serial · P/N · badge · actions */
 .dcard-header {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
 }
 .dcard-serial {
-    font-size: 11px; font-weight: 700; color: var(--gray-400);
-    min-width: 24px;
+    font-size: 10px; font-weight: 700; color: var(--gray-400);
+    min-width: 20px; flex-shrink: 0;
 }
-.dcard-title-block { display: flex; align-items: baseline; gap: 7px; flex: 1; min-width: 0; }
+.dcard-title-block { display: flex; align-items: baseline; gap: 6px; flex: 1; min-width: 0; }
 .dcard-pn {
-    font-size: 15px; font-weight: 700; color: var(--text);
+    font-size: 13px; font-weight: 700; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dcard-rev {
-    font-size: 11px; font-weight: 600; color: var(--gray-400);
+    font-size: 10px; font-weight: 600; color: var(--gray-400);
     white-space: nowrap;
 }
-.dcard-header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.dcard-header-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .dcard-po-badge {
     font-size: 10px; font-weight: 700; color: var(--gray-500);
     background: var(--gray-100); border-radius: 4px;
-    padding: 2px 6px; white-space: nowrap;
+    padding: 1px 5px; white-space: nowrap;
 }
 
-/* Description */
+/* Description — single truncated line */
 .dcard-desc {
-    font-size: 13px; color: var(--gray-600);
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    overflow: hidden; line-height: 1.45;
+    font-size: 11px; color: var(--gray-500);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
-/* Meta grid */
+/* Meta row — all inline, separated by · */
 .dcard-meta-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 6px 14px;
-    padding: 10px 12px;
-    background: var(--gray-50, #f8fafc);
-    border-radius: 7px;
-    border: 1px solid var(--gray-100, #f1f5f9);
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 0; padding: 0; background: none; border: none;
 }
-.dcard-meta-item { display: flex; flex-direction: column; gap: 1px; }
-.dcard-mk { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .3px; }
-.dcard-mv { font-size: 12px; font-weight: 600; color: var(--text); }
-.dcard-cost { color: #16a34a; font-size: 13px; font-weight: 700; }
-
-/* Dates row */
-.dcard-dates {
-    display: flex; flex-wrap: wrap; gap: 6px 16px;
-    padding-top: 4px;
-    border-top: 1px solid var(--gray-100, #f1f5f9);
+.dcard-meta-item {
+    display: flex; align-items: baseline; gap: 3px;
+    font-size: 11px; white-space: nowrap;
 }
-.dcard-date-item { display: flex; flex-direction: column; gap: 1px; }
-.dcard-dk { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .3px; }
-.dcard-dv { font-size: 12px; font-weight: 600; color: var(--text); }
+.dcard-meta-item + .dcard-meta-item::before {
+    content: '·'; color: var(--gray-300); margin: 0 5px; font-size: 12px;
+}
+.dcard-mk { font-size: 10px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: .2px; }
+.dcard-mv { font-size: 11px; font-weight: 600; color: var(--gray-700); }
+.dcard-cost { color: #16a34a; font-weight: 700; }
 
-/* Stage pipeline */
+/* Dates row — hidden (dates visible in pipeline) */
+.dcard-dates { display: none; }
+.dcard-dk { display: none; }
+.dcard-dv { display: none; }
+
+/* Stage pipeline — tight, no background box */
 .dcard-pipeline {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
-    padding: 8px 10px;
-    background: var(--gray-50, #f8fafc);
-    border-radius: 7px;
-    border: 1px solid var(--gray-100, #f1f5f9);
+    display: flex; align-items: center; flex-wrap: wrap; gap: 1px;
+    padding: 0; background: none; border: none;
 }
 .dstage {
-    display: flex; align-items: center; gap: 3px;
-    padding: 3px 7px; border-radius: 4px;
+    display: flex; align-items: center; gap: 2px;
+    padding: 2px 5px; border-radius: 3px;
     font-size: 10px; font-weight: 600;
     white-space: nowrap;
 }
 .dstage-done { background: #f0fdf4; color: #15803d; }
 .dstage-todo { background: transparent; color: var(--gray-400); }
-.dstage-dot  { font-size: 11px; }
-.dstage-lbl  { }
-.dstage-arrow { color: var(--gray-300); font-size: 13px; padding: 0 1px; }
+.dstage-dot  { font-size: 10px; }
+.dstage-arrow { color: var(--gray-300); font-size: 11px; padding: 0; }
 
 /* Notes */
 .dcard-notes {
-    display: flex; align-items: flex-start; gap: 6px;
-    font-size: 11px; color: var(--gray-500);
-    font-style: italic; line-height: 1.4;
-    padding-top: 2px;
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--gray-400);
+    font-style: italic; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
 }
-.dcard-notes svg { flex-shrink: 0; margin-top: 1px; }
+.dcard-notes svg { flex-shrink: 0; }
 
-/* Actions */
-.dcard-actions {
-    display: flex; gap: 6px;
-    margin-top: auto;
-    padding-top: 8px;
-    border-top: 1px solid var(--gray-100, #f1f5f9);
+/* Actions — icon buttons in header (always visible) */
+.dcard-actions { display: none; } /* actions moved to header */
+.dcard-btn { display: none; }
+
+/* Inline icon action buttons */
+.dcard-icon-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 5px;
+    border: 1px solid var(--gray-200); background: white;
+    cursor: pointer; color: var(--gray-500);
+    transition: all .12s; flex-shrink: 0;
 }
-.dcard-btn {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
-    padding: 6px 0; border: 1px solid var(--gray-200);
-    border-radius: 6px; font-size: 11px; font-weight: 600;
-    background: white; cursor: pointer; transition: all .15s;
-    color: var(--gray-600);
-}
-.dcard-btn:hover { border-color: currentColor; }
-.dcard-btn-edit:hover  { color: #2563eb; border-color: #2563eb; background: #eff6ff; }
-.dcard-btn-dup:hover   { color: #16a34a; border-color: #16a34a; background: #f0fdf4; }
-.dcard-btn-del:hover   { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
+.dcard-icon-btn:hover { border-color: currentColor; }
+.dcard-icon-btn-edit:hover { color: #2563eb; background: #eff6ff; border-color: #2563eb; }
+.dcard-icon-btn-dup:hover  { color: #16a34a; background: #f0fdf4; border-color: #16a34a; }
+.dcard-icon-btn-del:hover  { color: #dc2626; background: #fef2f2; border-color: #dc2626; }
 
 .btn-icon-edit:hover { background: #bfdbfe; }
 

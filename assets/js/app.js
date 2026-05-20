@@ -675,42 +675,28 @@ const app = {
         <div class="dcard-header-right">
             ${poNum}
             <span class="badge ${stClass}">${stLabel}</span>
+            <button class="dcard-icon-btn dcard-icon-btn-edit" title="Edit" onclick="event.stopPropagation();app.openEditModal('${item.id}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="dcard-icon-btn dcard-icon-btn-dup" title="Duplicate" onclick="event.stopPropagation();app.duplicateItem('${item.id}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+            <button class="dcard-icon-btn dcard-icon-btn-del" title="Delete" onclick="event.stopPropagation();app.deleteItem('${item.id}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            </button>
         </div>
     </div>
-
-    ${item.description ? `<div class="dcard-desc">${item.description}</div>` : ''}
 
     <div class="dcard-meta-grid">
         ${item.project  ? `<div class="dcard-meta-item"><span class="dcard-mk">Project</span><span class="dcard-mv">${item.project}</span></div>` : ''}
         ${item.supplier ? `<div class="dcard-meta-item"><span class="dcard-mk">Supplier</span><span class="dcard-mv">${item.supplier}</span></div>` : ''}
         <div class="dcard-meta-item"><span class="dcard-mk">Qty</span><span class="dcard-mv">${item.quantity || '—'}</span></div>
-        <div class="dcard-meta-item"><span class="dcard-mk">Cost / Unit</span><span class="dcard-mv dcard-cost">${costStr}</span></div>
-        ${item.wd ? `<div class="dcard-meta-item"><span class="dcard-mk">Lead Time</span><span class="dcard-mv">${item.wd} days</span></div>` : ''}
+        <div class="dcard-meta-item"><span class="dcard-mk">Cost</span><span class="dcard-mv dcard-cost">${costStr}</span></div>
+        ${item.wd ? `<div class="dcard-meta-item"><span class="dcard-mk">Lead</span><span class="dcard-mv">${item.wd}d</span></div>` : ''}
+        ${item.description ? `<div class="dcard-meta-item"><span class="dcard-mk">Note</span><span class="dcard-mv" style="color:var(--gray-500);font-style:italic;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.description}</span></div>` : ''}
     </div>
-
-    ${datesHtml ? `<div class="dcard-dates">${datesHtml}</div>` : ''}
 
     <div class="dcard-pipeline">${pipeline}</div>
-
-    ${item.notes ? `<div class="dcard-notes" title="${item.notes.replace(/"/g,'&quot;')}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        ${item.notes.length > 70 ? item.notes.slice(0, 70) + '…' : item.notes}
-    </div>` : ''}
-
-    <div class="dcard-actions">
-        <button class="dcard-btn dcard-btn-edit" onclick="event.stopPropagation();app.openEditModal('${item.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit
-        </button>
-        <button class="dcard-btn dcard-btn-dup" onclick="event.stopPropagation();app.duplicateItem('${item.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            Duplicate
-        </button>
-        <button class="dcard-btn dcard-btn-del" onclick="event.stopPropagation();app.deleteItem('${item.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            Delete
-        </button>
-    </div>
 </div>`;
         }).join('');
     },
