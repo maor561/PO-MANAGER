@@ -216,9 +216,18 @@ const app = {
         });
         const inp = document.createElement('input');
         inp.type = 'number'; inp.id = costId; inp.min = '0'; inp.step = '0.01';
+        inp.placeholder = '0.00';
         if (item) inp.value = item.cost || '';
         wrap.appendChild(sel); wrap.appendChild(inp);
-        return wrap;
+
+        const hint = document.createElement('span');
+        hint.className = 'cost-hint';
+        hint.textContent = 'per unit';
+        const outer = document.createElement('div');
+        outer.className = 'cost-field-wrap';
+        outer.appendChild(wrap);
+        outer.appendChild(hint);
+        return outer;
     },
 
     closeAddModal() { document.getElementById('addModal').classList.remove('show'); },

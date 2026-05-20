@@ -604,6 +604,8 @@ form { padding: 18px 22px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group-full { grid-column: 1 / -1; }
 
+.cost-field-wrap { display: flex; flex-direction: column; gap: 3px; }
+.cost-hint { font-size: 10px; color: var(--gray-500, #94a3b8); font-style: italic; }
 .cost-wrap { display: flex; gap: 4px; align-items: stretch; }
 .cost-wrap input[type="number"] { flex: 1; min-width: 0; }
 .currency-select {
