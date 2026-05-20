@@ -436,13 +436,12 @@ button:active { opacity: .85; }
     padding: 10px 24px;
     background: white;
     border-bottom: 1px solid var(--gray-200);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     flex-shrink: 0;
 }
-.filter-bar-left, .filter-bar-right {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.filter-bar-dropdowns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-bar-left  { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: nowrap; overflow: hidden; }
+.filter-bar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.filter-bar-dropdowns { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; flex-shrink: 0; }
 
 /* Search */
 .search-wrap { position: relative; }
