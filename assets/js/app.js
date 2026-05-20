@@ -35,6 +35,7 @@ const app = {
     dashboardCharts: {},
     refreshInterval: null,
     timelineGranularity: 'month',
+    viewMode: 'table',
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -83,6 +84,7 @@ const app = {
     loadSettings() {
         this.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS));
         this.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
+        this.viewMode = localStorage.getItem('po_viewMode') || 'table';
     },
 
     setupEventListeners() {
@@ -561,6 +563,106 @@ const app = {
         return window.innerWidth <= 480;
     },
 
+    renderDesktopCards(items) {
+        const wrap = document.getElementById('desktopCardsWrapper');
+        if (!wrap) return;
+
+        if (!items.length) {
+            wrap.innerHTML = '<div class="dcard-empty">No items to display</div>';
+            return;
+        }
+
+        const CURRENCY = { ILS: '₪', USD: '$', EUR: '€' };
+
+        wrap.innerHTML = items.map((item, idx) => {
+            const done    = !!item.hslwhDate;
+            const delayed = this.isArrivalDelayed(item);
+            const soon    = this.isArrivingSoon(item);
+            const status  = done ? 'completed' : delayed ? 'delayed' : soon ? 'soon' : 'progress';
+            const stLabel = done ? 'Completed'  : delayed ? 'Delayed'  : soon ? 'Due Soon' : 'In Progress';
+            const stClass = done ? 'badge-success' : delayed ? 'badge-danger' : soon ? 'badge-warning' : 'badge-info';
+
+            const sym     = CURRENCY[item.currency || 'ILS'] || '₪';
+            const costStr = item.cost ? `${sym}${Number(item.cost).toLocaleString()}` : '—';
+
+            // Stage pipeline
+            const pipeline = this.stages.map(stage => {
+                const isDone = stage.completedKey ? !!item[stage.completedKey] : !!item[stage.key];
+                const lbl    = stage.name.replace(' Date','').replace(' #','#');
+                return `<span class="dstage ${isDone ? 'dstage-done' : 'dstage-todo'}">
+                    <span class="dstage-dot">${isDone ? '✓' : '○'}</span>
+                    <span class="dstage-lbl">${lbl}</span>
+                </span>`;
+            }).join('<span class="dstage-arrow">›</span>');
+
+            // Key dates
+            const dates = [
+                item.pd          ? ['PR Date', this.formatDate(item.pd)]            : null,
+                item.po          ? ['PO Date', this.formatDate(item.po)]            : null,
+                item.promiseDate ? ['Promise',  this.formatDate(item.promiseDate)]  : null,
+                item.arrivalDate ? ['Arrival',  this.formatDate(item.arrivalDate)]  : null,
+            ].filter(Boolean);
+
+            const datesHtml = dates.map(([k,v]) =>
+                `<div class="dcard-date-item">
+                    <span class="dcard-dk">${k}</span>
+                    <span class="dcard-dv">${v}</span>
+                </div>`
+            ).join('');
+
+            const poNum = item.poNumber ? `<span class="dcard-po-badge">PO# ${item.poNumber}</span>` : '';
+
+            return `
+<div class="dcard dcard-${status}" ondblclick="app.openEditModal('${item.id}')">
+    <div class="dcard-header">
+        <span class="dcard-serial">#${idx + 1}</span>
+        <div class="dcard-title-block">
+            <span class="dcard-pn">${item.partNumber || '—'}</span>
+            ${item.revision ? `<span class="dcard-rev">Rev.${item.revision}</span>` : ''}
+        </div>
+        <div class="dcard-header-right">
+            ${poNum}
+            <span class="badge ${stClass}">${stLabel}</span>
+        </div>
+    </div>
+
+    ${item.description ? `<div class="dcard-desc">${item.description}</div>` : ''}
+
+    <div class="dcard-meta-grid">
+        ${item.project  ? `<div class="dcard-meta-item"><span class="dcard-mk">Project</span><span class="dcard-mv">${item.project}</span></div>` : ''}
+        ${item.supplier ? `<div class="dcard-meta-item"><span class="dcard-mk">Supplier</span><span class="dcard-mv">${item.supplier}</span></div>` : ''}
+        <div class="dcard-meta-item"><span class="dcard-mk">Qty</span><span class="dcard-mv">${item.quantity || '—'}</span></div>
+        <div class="dcard-meta-item"><span class="dcard-mk">Cost / Unit</span><span class="dcard-mv dcard-cost">${costStr}</span></div>
+        ${item.wd ? `<div class="dcard-meta-item"><span class="dcard-mk">Lead Time</span><span class="dcard-mv">${item.wd} days</span></div>` : ''}
+    </div>
+
+    ${datesHtml ? `<div class="dcard-dates">${datesHtml}</div>` : ''}
+
+    <div class="dcard-pipeline">${pipeline}</div>
+
+    ${item.notes ? `<div class="dcard-notes" title="${item.notes.replace(/"/g,'&quot;')}">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        ${item.notes.length > 70 ? item.notes.slice(0, 70) + '…' : item.notes}
+    </div>` : ''}
+
+    <div class="dcard-actions">
+        <button class="dcard-btn dcard-btn-edit" onclick="event.stopPropagation();app.openEditModal('${item.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+        </button>
+        <button class="dcard-btn dcard-btn-dup" onclick="event.stopPropagation();app.duplicateItem('${item.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Duplicate
+        </button>
+        <button class="dcard-btn dcard-btn-del" onclick="event.stopPropagation();app.deleteItem('${item.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Delete
+        </button>
+    </div>
+</div>`;
+        }).join('');
+    },
+
     renderItemCards(items) {
         const wrap = document.getElementById('cardsWrapper');
         if (!wrap) return;
@@ -836,10 +938,30 @@ const app = {
             ? `${this.items.length} items`
             : `${items.length} of ${this.items.length} items`;
 
+        // Sync view-mode toggle buttons
+        document.getElementById('vmTable')?.classList.toggle('vm-active', this.viewMode === 'table');
+        document.getElementById('vmCards')?.classList.toggle('vm-active', this.viewMode === 'cards');
+
+        const tableWrapper = document.querySelector('.table-wrapper');
+        const dcWrapper    = document.getElementById('desktopCardsWrapper');
+
         if (this.isMobile()) {
+            if (tableWrapper) tableWrapper.style.display = 'none';
+            if (dcWrapper)    dcWrapper.style.display = 'none';
             this.renderItemCards(items);
             return;
         }
+
+        if (this.viewMode === 'cards') {
+            if (tableWrapper) tableWrapper.style.display = 'none';
+            if (dcWrapper)    dcWrapper.style.display = '';
+            this.renderDesktopCards(items);
+            return;
+        }
+
+        // Table mode
+        if (tableWrapper) tableWrapper.style.display = '';
+        if (dcWrapper)    dcWrapper.style.display = 'none';
 
         const tbody = document.getElementById('itemsBody');
         tbody.innerHTML = '';
@@ -1117,29 +1239,39 @@ const app = {
 
     /* ── Dashboard ─────────────────────────────────────── */
     switchView(view) {
-        const dashboard = document.getElementById('dashboardSection');
-        const filterBar = document.querySelector('.filter-bar');
-        const tableWrapper = document.querySelector('.table-wrapper');
-        const cardsWrapper = document.getElementById('cardsWrapper');
-        const tableTab = document.getElementById('tableTabBtn');
-        const dashTab = document.getElementById('dashboardTabBtn');
+        const dashboard     = document.getElementById('dashboardSection');
+        const filterBar     = document.querySelector('.filter-bar');
+        const tableWrapper  = document.querySelector('.table-wrapper');
+        const cardsWrapper  = document.getElementById('cardsWrapper');
+        const dcWrapper     = document.getElementById('desktopCardsWrapper');
+        const tableTab      = document.getElementById('tableTabBtn');
+        const dashTab       = document.getElementById('dashboardTabBtn');
 
         if (view === 'dashboard') {
             dashboard.classList.remove('hidden');
             filterBar.style.display = 'none';
             tableWrapper.style.display = 'none';
             if (cardsWrapper) cardsWrapper.style.setProperty('display', 'none', 'important');
+            if (dcWrapper) dcWrapper.style.display = 'none';
             tableTab.classList.remove('active');
             dashTab.classList.add('active');
             this.renderDashboard();
         } else {
             dashboard.classList.add('hidden');
             filterBar.style.display = '';
-            tableWrapper.style.display = '';
             if (cardsWrapper) cardsWrapper.style.removeProperty('display');
             tableTab.classList.add('active');
             dashTab.classList.remove('active');
+            this.renderItems();
         }
+    },
+
+    setViewMode(mode) {
+        this.viewMode = mode;
+        localStorage.setItem('po_viewMode', mode);
+        document.getElementById('vmTable')?.classList.toggle('vm-active', mode === 'table');
+        document.getElementById('vmCards')?.classList.toggle('vm-active', mode === 'cards');
+        this.renderItems();
     },
 
     clearDashDateFilter() {
