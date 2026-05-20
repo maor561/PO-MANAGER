@@ -171,7 +171,15 @@
                 <canvas id="onTimePieChart"></canvas>
             </div>
             <div class="chart-box chart-box-wide">
-                <h4>Delivery Trend</h4>
+                <div class="chart-header">
+                    <h4>Delivery Trend</h4>
+                    <div class="trend-toggle">
+                        <button class="trend-btn" data-g="day"   onclick="app.setTimelineGranularity('day')">Days</button>
+                        <button class="trend-btn" data-g="week"  onclick="app.setTimelineGranularity('week')">Weeks</button>
+                        <button class="trend-btn active" data-g="month" onclick="app.setTimelineGranularity('month')">Months</button>
+                        <button class="trend-btn" data-g="year"  onclick="app.setTimelineGranularity('year')">Years</button>
+                    </div>
+                </div>
                 <canvas id="timelineChart"></canvas>
             </div>
         </div>

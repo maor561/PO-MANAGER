@@ -34,6 +34,7 @@ const app = {
     editingItemId: null,
     dashboardCharts: {},
     refreshInterval: null,
+    timelineGranularity: 'month',
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -1286,13 +1287,52 @@ const app = {
         });
     },
 
+    setTimelineGranularity(g) {
+        this.timelineGranularity = g;
+        document.querySelectorAll('.trend-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.g === g));
+        this.renderTimelineChart(this.getDashItems());
+    },
+
+    _isoWeek(dateStr) {
+        const d = new Date(dateStr);
+        const thu = new Date(d);
+        thu.setDate(d.getDate() - (d.getDay() + 6) % 7 + 3);
+        const firstThu = new Date(thu.getFullYear(), 0, 4);
+        firstThu.setDate(firstThu.getDate() - (firstThu.getDay() + 6) % 7 + 3);
+        const week = Math.round((thu - firstThu) / 604800000) + 1;
+        return `${thu.getFullYear()}-W${String(week).padStart(2, '0')}`;
+    },
+
     renderTimelineChart(items) {
-        const byMonth = {};
+        const g = this.timelineGranularity || 'month';
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        const getKey = dateStr => {
+            if (!dateStr) return null;
+            if (g === 'day')   return dateStr.slice(0, 10);
+            if (g === 'week')  return this._isoWeek(dateStr);
+            if (g === 'month') return dateStr.slice(0, 7);
+            if (g === 'year')  return dateStr.slice(0, 4);
+        };
+
+        const formatLabel = key => {
+            if (g === 'day')   { const [y,m,d] = key.split('-'); return `${d}/${m}`; }
+            if (g === 'week')  { const [yr, w] = key.split('-W'); return `W${w} '${yr.slice(2)}`; }
+            if (g === 'month') { const [y,m] = key.split('-'); return `${MONTHS[+m-1]} '${y.slice(2)}`; }
+            if (g === 'year')  return key;
+        };
+
+        const counts = {};
         items.filter(i => i.hslwhDate).forEach(i => {
-            const m = i.hslwhDate.slice(0, 7);
-            byMonth[m] = (byMonth[m] || 0) + 1;
+            const k = getKey(i.hslwhDate);
+            if (k) counts[k] = (counts[k] || 0) + 1;
         });
-        const months = Object.keys(byMonth).sort().slice(-12);
+
+        const limits = { day: 30, week: 26, month: 12, year: 10 };
+        const keys   = Object.keys(counts).sort().slice(-limits[g]);
+        const labels = keys.map(formatLabel);
+        const capG   = g.charAt(0).toUpperCase() + g.slice(1);
 
         const ctx = document.getElementById('timelineChart');
         if (!ctx) return;
@@ -1301,9 +1341,9 @@ const app = {
         this.dashboardCharts.timeline = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: months,
-                datasets: [{ label: 'Deliveries per Month',
-                    data: months.map(m => byMonth[m] || 0),
+                labels,
+                datasets: [{ label: `Deliveries per ${capG}`,
+                    data: keys.map(k => counts[k] || 0),
                     borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)',
                     borderWidth: 2.5, tension: 0.4, fill: true,
                     pointBackgroundColor: '#2563eb', pointRadius: 5, pointHoverRadius: 7 }]

@@ -737,9 +737,30 @@ input[type="file"] { display: none; }
 }
 .chart-box h4 {
     font-size: 12px; font-weight: 700; color: var(--gray-600);
-    margin-bottom: 16px; text-transform: uppercase; letter-spacing: .5px;
+    text-transform: uppercase; letter-spacing: .5px; margin: 0;
 }
 .chart-box canvas { max-height: 220px; }
+
+.chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+}
+.trend-toggle {
+    display: flex; gap: 2px;
+    background: var(--gray-100, #f1f5f9);
+    border-radius: 6px; padding: 2px;
+}
+.trend-btn {
+    padding: 3px 10px; border: none; background: transparent;
+    border-radius: 4px; font-size: 11px; font-weight: 600;
+    color: var(--gray-500, #64748b); cursor: pointer;
+    transition: all 0.15s;
+}
+.trend-btn.active {
+    background: white; color: var(--primary, #2563eb);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.trend-btn:hover:not(.active) { color: var(--text, #1e293b); }
 
 /* Date filter */
 .dash-date-filter {
