@@ -664,6 +664,21 @@ const app = {
 
             const poNum = item.poNumber ? `<span class="dcard-po-badge">PO# ${item.poNumber}</span>` : '';
 
+            // Arrival date color based on status
+            const arrivalColor = delayed ? '#dc2626' : soon ? '#d97706' : done ? '#16a34a' : 'var(--gray-700)';
+            const arrivalBg    = delayed ? '#fef2f2' : soon ? '#fffbeb' : done ? '#f0fdf4' : 'var(--gray-100)';
+
+            // Dates line: Arrival prominent, others secondary
+            const arrivalStr = item.arrivalDate
+                ? `<span class="dcard-arrival" style="color:${arrivalColor};background:${arrivalBg}">📅 Arrival: <strong>${this.formatDate(item.arrivalDate)}</strong></span>`
+                : `<span class="dcard-arrival" style="color:var(--gray-400)">📅 Arrival: —</span>`;
+
+            const secDates = [
+                item.po          ? `<span class="dcard-date-sec">PO: ${this.formatDate(item.po)}</span>`            : '',
+                item.promiseDate ? `<span class="dcard-date-sec">Promise: ${this.formatDate(item.promiseDate)}</span>` : '',
+                item.hslwhDate   ? `<span class="dcard-date-sec" style="color:#16a34a">HSL WH: ${this.formatDate(item.hslwhDate)}</span>` : '',
+            ].filter(Boolean).join('<span class="dcard-date-dot">·</span>');
+
             return `
 <div class="dcard dcard-${status}" ondblclick="app.openEditModal('${item.id}')">
     <div class="dcard-header">
@@ -693,7 +708,12 @@ const app = {
         <div class="dcard-meta-item"><span class="dcard-mk">Qty</span><span class="dcard-mv">${item.quantity || '—'}</span></div>
         <div class="dcard-meta-item"><span class="dcard-mk">Cost</span><span class="dcard-mv dcard-cost">${costStr}</span></div>
         ${item.wd ? `<div class="dcard-meta-item"><span class="dcard-mk">Lead</span><span class="dcard-mv">${item.wd}d</span></div>` : ''}
-        ${item.description ? `<div class="dcard-meta-item"><span class="dcard-mk">Note</span><span class="dcard-mv" style="color:var(--gray-500);font-style:italic;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.description}</span></div>` : ''}
+        ${item.description ? `<div class="dcard-meta-item"><span class="dcard-mk">Note</span><span class="dcard-mv" style="color:var(--gray-500);font-style:italic;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.description}</span></div>` : ''}
+    </div>
+
+    <div class="dcard-dates-row">
+        ${arrivalStr}
+        ${secDates ? `<span class="dcard-date-dot">·</span>${secDates}` : ''}
     </div>
 
     <div class="dcard-pipeline">${pipeline}</div>

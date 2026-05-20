@@ -324,10 +324,28 @@ button:active { opacity: .85; }
 .dcard-mv { font-size: 11px; font-weight: 600; color: var(--gray-700); }
 .dcard-cost { color: #16a34a; font-weight: 700; }
 
-/* Dates row — hidden (dates visible in pipeline) */
+/* Dates row — hidden (legacy) */
 .dcard-dates { display: none; }
 .dcard-dk { display: none; }
 .dcard-dv { display: none; }
+
+/* New compact dates row */
+.dcard-dates-row {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+    font-size: 11px;
+}
+.dcard-arrival {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.dcard-arrival strong { font-weight: 700; }
+.dcard-date-sec {
+    font-size: 10px; color: var(--gray-500); font-weight: 500; white-space: nowrap;
+}
+.dcard-date-dot {
+    color: var(--gray-300); font-size: 11px; padding: 0 1px;
+}
 
 /* Stage pipeline — tight, no background box */
 .dcard-pipeline {
