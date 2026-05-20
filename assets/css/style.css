@@ -251,13 +251,10 @@ button:active { opacity: .85; }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr;
     align-content: start;
-    gap: 16px;
+    gap: 12px;
     padding: 20px 0 32px;
-}
-@media (max-width: 1280px) { .dcard-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 800px)  { .dcard-grid { grid-template-columns: 1fr; } }
 
 .dcard-empty { text-align: center; color: var(--gray-400); padding: 60px 0; font-size: 15px; }
 
