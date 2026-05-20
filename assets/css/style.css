@@ -190,6 +190,45 @@ button:active { opacity: .85; }
     border: 1px solid #bfdbfe;
     border-radius: var(--radius);
 }
+/* ── Compact mode ──────────────────────────────────────── */
+.compact table td, .compact table th { padding-top: 3px !important; padding-bottom: 3px !important; }
+.compact table td { height: 28px !important; font-size: 12px; }
+.compact .child-th { height: 28px !important; font-size: 11px; }
+.compact .stage-cell { gap: 3px; }
+.compact .tracing-input { font-size: 11px; }
+.compact .stage-date-input { font-size: 11px; }
+
+/* ── Column picker ─────────────────────────────────────── */
+.col-picker-wrap { position: relative; }
+.col-picker-dropdown {
+    position: absolute; right: 0; top: calc(100% + 6px);
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+    min-width: 180px;
+    max-height: 340px;
+    overflow-y: auto;
+    z-index: 200;
+}
+.col-picker-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 5px;
+    font-size: 12px; font-weight: 500; color: var(--text);
+    cursor: pointer; user-select: none;
+}
+.col-picker-item:hover { background: var(--gray-50); }
+.col-picker-item input[type="checkbox"] { accent-color: var(--primary); cursor: pointer; }
+
+/* ── Description column truncation ────────────────────── */
+.col-desc {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: help;
+}
+
 /* ── View-mode toggle ──────────────────────────────────── */
 .view-mode-toggle {
     display: flex; gap: 2px;

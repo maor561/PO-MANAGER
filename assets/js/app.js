@@ -36,6 +36,8 @@ const app = {
     refreshInterval: null,
     timelineGranularity: 'month',
     viewMode: 'table',
+    compactMode: false,
+    hiddenColumns: new Set(),
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -49,6 +51,8 @@ const app = {
         this.setupTablePan();
         this.setupMobileUI();
         this.startAutoRefresh();
+        // Sync persistent UI state
+        document.getElementById('compactBtn')?.classList.toggle('vm-active', this.compactMode);
     },
 
     /* ── Auto-Refresh ─────────────────────────────────────── */
@@ -84,13 +88,61 @@ const app = {
     loadSettings() {
         this.fields = JSON.parse(JSON.stringify(DEFAULT_FIELDS));
         this.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
-        this.viewMode = localStorage.getItem('po_viewMode') || 'table';
+        this.viewMode     = localStorage.getItem('po_viewMode')  || 'table';
+        this.compactMode  = localStorage.getItem('po_compact')   === '1';
+        this.hiddenColumns = new Set(JSON.parse(localStorage.getItem('po_hiddenCols') || '[]'));
+        if (this.compactMode) document.querySelector('.app-shell')?.classList.add('compact');
+    },
+
+    /* ── Compact mode ─────────────────────────────────────── */
+    toggleCompact() {
+        this.compactMode = !this.compactMode;
+        localStorage.setItem('po_compact', this.compactMode ? '1' : '0');
+        document.querySelector('.app-shell').classList.toggle('compact', this.compactMode);
+        document.getElementById('compactBtn')?.classList.toggle('vm-active', this.compactMode);
+    },
+
+    /* ── Column picker ────────────────────────────────────── */
+    toggleColPicker() {
+        const dd = document.getElementById('colPickerDropdown');
+        if (!dd) return;
+        const open = dd.style.display !== 'none';
+        if (open) { dd.style.display = 'none'; return; }
+        // Build checkboxes
+        const allCols = [
+            ...this.fields.filter(f => f.type !== 'auto').map(f => ({ id: f.id, name: f.name })),
+            { id: '_quotDate', name: 'Quot. Date' },
+            ...this.stages.map(s => ({ id: s.id, name: s.name }))
+        ];
+        dd.innerHTML = allCols.map(col =>
+            `<label class="col-picker-item">
+                <input type="checkbox" ${this.hiddenColumns.has(col.id) ? '' : 'checked'}
+                    onchange="app.toggleColumnVisibility('${col.id}')">
+                <span>${col.name}</span>
+            </label>`
+        ).join('');
+        dd.style.display = '';
+    },
+
+    toggleColumnVisibility(colId) {
+        if (this.hiddenColumns.has(colId)) this.hiddenColumns.delete(colId);
+        else this.hiddenColumns.add(colId);
+        localStorage.setItem('po_hiddenCols', JSON.stringify([...this.hiddenColumns]));
+        this.renderParentHeader();
+        this.renderItems();
     },
 
     setupEventListeners() {
         document.getElementById('addForm').addEventListener('submit', e => {
             e.preventDefault();
             this.saveNewItem();
+        });
+        document.addEventListener('click', e => {
+            const wrap = document.getElementById('colPickerWrap');
+            const dd   = document.getElementById('colPickerDropdown');
+            if (dd && dd.style.display !== 'none' && wrap && !wrap.contains(e.target)) {
+                dd.style.display = 'none';
+            }
         });
     },
 
@@ -896,23 +948,26 @@ const app = {
     renderParentHeader() {
         const parentRow = document.getElementById('parentHeader');
         const childRow  = document.getElementById('childHeader');
+        const H = this.hiddenColumns;
 
-        const itemCols   = this.fields.length + 1; // +1 Quot. Date
-        const supplyCols = this.stages.length + 1; // +1 Actions
+        const visFields  = this.fields.filter(f => !H.has(f.id));
+        const visStages  = this.stages.filter(s => !H.has(s.id));
+        const itemCols   = visFields.length + (H.has('_quotDate') ? 0 : 1);
+        const supplyCols = visStages.length + 1; // +1 Actions always visible
 
         parentRow.innerHTML =
             `<th colspan="${itemCols}"   class="parent-header-cell">Item Details</th>` +
             `<th colspan="${supplyCols}" class="parent-header-cell">Supply Chain</th>`;
 
         let ch = '';
-        this.fields.forEach((field, i) => {
+        visFields.forEach((field, i) => {
             const sticky = i === 0 ? 'sticky-col sticky-col-1' : i === 1 ? 'sticky-col sticky-col-2' : '';
             ch += `<th class="sortable child-th ${sticky}" onclick="app.sortByColumn('${field.id}')">
                        ${field.name}${this.getSortIcon(field.id, false)}
                    </th>`;
         });
-        ch += `<th class="child-th">Quot. Date</th>`;
-        this.stages.forEach(stage => {
+        if (!H.has('_quotDate')) ch += `<th class="child-th">Quot. Date</th>`;
+        visStages.forEach(stage => {
             ch += `<th class="sortable stage-header child-th" onclick="app.sortByStageKey('${stage.key}')">
                        ${stage.name}${this.getSortIcon(stage.key, true)}
                    </th>`;
@@ -973,9 +1028,13 @@ const app = {
             else if (this.isArrivingSoon(item))   row.classList.add('row-due-soon');
 
             let html = '';
+            const H = this.hiddenColumns;
 
-            this.fields.forEach((field, i) => {
-                const sticky = i === 0 ? 'sticky-col sticky-col-1' : i === 1 ? 'sticky-col sticky-col-2' : '';
+            let visIdx = 0;
+            this.fields.forEach(field => {
+                if (H.has(field.id)) return;
+                const sticky = visIdx === 0 ? 'sticky-col sticky-col-1' : visIdx === 1 ? 'sticky-col sticky-col-2' : '';
+                visIdx++;
 
                 if (field.id === 'serialNumber') {
                     html += `<td class="${sticky} col-serial">${rowIndex + 1}</td>`;
@@ -993,8 +1052,13 @@ const app = {
 
                 } else if (field.id === 'cost') {
                     const sym = { ILS: '₪', USD: '$', EUR: '€' }[item.currency || 'ILS'] || '₪';
-                    const val = item.cost != null && item.cost !== '' ? `${sym}${Number(item.cost).toLocaleString()}` : '';
+                    const val = item.cost ? `${sym}${Number(item.cost).toLocaleString()}` : '—';
                     html += `<td class="${sticky}">${val}</td>`;
+
+                } else if (field.id === 'description') {
+                    const desc = item.description || '';
+                    const esc  = desc.replace(/"/g, '&quot;');
+                    html += `<td class="${sticky} col-desc" title="${esc}">${desc}</td>`;
 
                 } else if (field.id === 'notes') {
                     const note = item.notes || '';
@@ -1009,10 +1073,11 @@ const app = {
 
             // Quot. Date
             const quotDate = this.calculateQuotationDate(item.po, item.wd);
-            html += `<td class="col-date">${this.formatDate(quotDate)}</td>`;
+            if (!H.has('_quotDate')) html += `<td class="col-date">${this.formatDate(quotDate)}</td>`;
 
             // Stages
             this.stages.forEach(stage => {
+                if (H.has(stage.id)) return;
                 if (stage.type === 'text') {
                     const val = (item[stage.key] || '').replace(/"/g, '&quot;');
                     const isCompleted = val ? true : false;
