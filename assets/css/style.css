@@ -1292,24 +1292,36 @@ input[type="file"] { display: none; }
     .view-tab { font-size: 13px; padding: 9px 18px; }
 
     /* Dashboard */
-    .dashboard-section { padding: 12px; }
+    .dashboard-section { padding: 10px; overflow-y: auto; }
     .dash-date-filter {
-        flex-direction: column; align-items: stretch;
-        gap: 8px; padding: 12px; margin-bottom: 14px;
+        display: flex; flex-direction: row; align-items: center; flex-wrap: wrap;
+        gap: 6px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;
     }
-    .dash-date-filter input { font-size: 15px; padding: 9px 10px; min-height: 44px; }
-    .dash-kpi-row { grid-template-columns: 1fr 1fr !important; gap: 10px; margin-bottom: 14px; }
-    .dash-kpi-card { padding: 14px 12px; }
-    .dash-kpi-label { font-size: 11px; }
-    .dash-kpi-value { font-size: 20px; }
-    .dash-kpi-icon { width: 36px; height: 36px; font-size: 16px; }
-    .dash-charts-row { grid-template-columns: 1fr !important; gap: 12px; }
-    .supplier-split { grid-template-columns: 1fr !important; gap: 12px; }
-    .chart-box { padding: 14px 12px; }
-    .chart-box h4 { font-size: 13px; }
-    .dash-atrisk-section { padding: 14px 12px; overflow-x: auto; }
+    .dash-date-filter input { font-size: 14px; padding: 7px 8px; min-height: 38px; flex: 1; }
+    /* KPI 2×3 grid */
+    .dash-kpi-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .dash-kpi-card {
+        display: flex !important; align-items: center !important;
+        gap: 10px; padding: 12px 10px;
+    }
+    .dash-kpi-icon { width: 34px; height: 34px; font-size: 15px; flex-shrink: 0; }
+    .dash-kpi-label { font-size: 10px; margin-bottom: 2px; }
+    .dash-kpi-value { font-size: 18px; }
+    .dash-kpi-value.text { font-size: 12px; }
+    /* Charts single column */
+    .dash-charts-row { display: grid !important; grid-template-columns: 1fr !important; gap: 10px; }
+    .supplier-split  { display: grid !important; grid-template-columns: 1fr !important; gap: 10px; }
+    .chart-box { padding: 12px 10px; }
+    .chart-box canvas { max-height: 180px; }
+    .chart-header { margin-bottom: 10px; }
+    .trend-toggle { display: none; } /* hide granularity on mobile */
+    .dash-atrisk-section { padding: 12px 10px; overflow-x: auto; }
     .dash-atrisk-table { font-size: 12px; min-width: 460px; }
-    .dash-atrisk-table th, .dash-atrisk-table td { padding: 8px 8px; }
+    .dash-atrisk-table th, .dash-atrisk-table td { padding: 7px 7px; }
 
     /* Table hidden → card view active */
     .table-wrapper { display: none !important; }
