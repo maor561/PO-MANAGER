@@ -40,10 +40,12 @@ const app = {
     hiddenColumns: new Set(),
     recvSort: { col: 'hslwhDate', dir: 'asc' },
     activeTab: 'table',
+    currentUser: '',
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
         this.loadSettings();
+        this.initUser();
         await this.loadItems();
         this.setupEventListeners();
         this.renderParentHeader();
@@ -52,12 +54,73 @@ const app = {
         this.renderStagesSettings();
         this.setupTablePan();
         this.setupMobileUI();
-        this.startAutoRefresh();
-        // Sync persistent UI state
+        this.connectSSE();          // real-time push (replaces polling)
+        this.startAutoRefresh();    // fallback polling (30s)
         document.getElementById('compactBtn')?.classList.toggle('vm-active', this.compactMode);
     },
 
-    /* ── Auto-Refresh ─────────────────────────────────────── */
+    /* ── User identity ────────────────────────────────────── */
+    initUser() {
+        let name = localStorage.getItem('po_username') || '';
+        if (!name) {
+            name = prompt('שלום! מה שמך?\n(השם יוצג לצוות כשתערוך פריטים)', '') || 'Anonymous';
+            localStorage.setItem('po_username', name);
+        }
+        this.currentUser = name;
+        this._updateUserBadge();
+    },
+
+    changeUser() {
+        const name = prompt('שנה שם:', this.currentUser) || this.currentUser;
+        this.currentUser = name;
+        localStorage.setItem('po_username', name);
+        this._updateUserBadge();
+    },
+
+    _updateUserBadge() {
+        const badge = document.getElementById('userBadge');
+        if (badge) { badge.textContent = '👤 ' + this.currentUser; badge.style.display = ''; }
+    },
+
+    /* ── SSE real-time sync ───────────────────────────────── */
+    connectSSE() {
+        if (!this.useApi) return;
+        if (typeof EventSource === 'undefined') return;
+
+        const es = new EventSource('/api/events');
+
+        es.addEventListener('items-changed', async (e) => {
+            try {
+                const payload = JSON.parse(e.data);
+                // Reload fresh data from server
+                const res = await fetch('/api/items');
+                if (!res.ok) return;
+                const fresh = await res.json();
+                this.items = fresh;
+                this.applyCurrentSort();
+                this._renderCurrentTab();
+                // Show who triggered the update
+                const by = payload.by ? ` by ${payload.by}` : '';
+                this.showMessage(`↻ Updated${by}`, 'info', 2000);
+            } catch (err) {}
+        });
+
+        es.onerror = () => {
+            es.close();
+            // Reconnect after 5s
+            setTimeout(() => this.connectSSE(), 5000);
+        };
+
+        this._sseSource = es;
+    },
+
+    _renderCurrentTab() {
+        if (this.activeTab === 'received') this.renderReceived();
+        else if (this.activeTab === 'dashboard') this.renderDashboard();
+        else this.renderItems();
+    },
+
+    /* ── Auto-Refresh (fallback polling) ─────────────────── */
     startAutoRefresh() {
         if (!this.useApi) return;
         this.refreshInterval = setInterval(async () => {
@@ -66,21 +129,14 @@ const app = {
                 if (!res.ok) return;
                 const fresh = await res.json();
                 const byId = arr => JSON.stringify([...arr].sort((a,b) => a.id < b.id ? -1 : 1));
-                const changed = byId(fresh) !== byId(this.items);
-                if (changed) {
+                if (byId(fresh) !== byId(this.items)) {
                     this.items = fresh;
                     this.applyCurrentSort();
-                    if (this.activeTab === 'received') {
-                        this.renderReceived();
-                    } else if (this.activeTab === 'dashboard') {
-                        this.renderDashboard();
-                    } else {
-                        this.renderItems();
-                    }
+                    this._renderCurrentTab();
                     this.showRefreshIndicator();
                 }
             } catch (e) {}
-        }, 30000); // every 30 seconds
+        }, 30000);
     },
 
     showRefreshIndicator() {
@@ -374,10 +430,19 @@ const app = {
 
         if (!valid) { this.showMessage('Please fill in all required fields.', 'error'); return; }
 
-        await this.saveItems();
-        this.renderItems();
-        this.closeEditModal();
-        this.showMessage('Item updated successfully!', 'success');
+        const originalUpdatedAt = item.updatedAt; // capture before mutating
+        try {
+            if (this.useApi) {
+                await this.saveItemApi(item, originalUpdatedAt);
+            } else {
+                await this.saveItems();
+            }
+            this.renderItems();
+            this.closeEditModal();
+            this.showMessage('Item updated successfully!', 'success');
+        } catch (err) {
+            this.showMessage('⚠️ ' + err.message, 'error', 6000);
+        }
     },
 
     getNextSerial() {
@@ -415,10 +480,19 @@ const app = {
         });
 
         this.items.push(item);
-        await this.saveItems();
-        this.renderItems();
-        this.closeAddModal();
-        this.showMessage('Item added successfully!', 'success');
+        try {
+            if (this.useApi) {
+                await this.saveItemApi(item, null); // new item — no original timestamp
+            } else {
+                await this.saveItems();
+            }
+            this.renderItems();
+            this.closeAddModal();
+            this.showMessage('Item added successfully!', 'success');
+        } catch (err) {
+            this.items.pop(); // rollback local add on failure
+            this.showMessage('⚠️ ' + err.message, 'error', 6000);
+        }
     },
 
     /* ── Update ───────────────────────────────────────────── */
@@ -461,7 +535,8 @@ const app = {
         if (stage && stage.completedKey) {
             item[stage.completedKey] = dateValue ? true : false;
         }
-        await this.saveItems();
+        if (this.useApi) { try { await this.saveItemApi(item); } catch(e) {} }
+        else await this.saveItems();
         this.renderItems();
     },
 
@@ -469,8 +544,8 @@ const app = {
         const item = this.items.find(i => i.id === itemId);
         if (!item) return;
         item[completedKey] = checked;
-        // never touch the date — user controls it independently
-        await this.saveItems();
+        if (this.useApi) { try { await this.saveItemApi(item); } catch(e) {} }
+        else await this.saveItems();
         this.renderItems();
     },
 
@@ -478,7 +553,8 @@ const app = {
         const item = this.items.find(i => i.id === itemId);
         if (!item) return;
         item[key] = value;
-        await this.saveItems();
+        if (this.useApi) { try { await this.saveItemApi(item); } catch(e) {} }
+        else await this.saveItems();
         this.renderItems();
     },
 
@@ -500,7 +576,8 @@ const app = {
             notes:       src.notes,
         };
         this.items.push(copy);
-        await this.saveItems();
+        if (this.useApi) { try { await this.saveItemApi(copy, null); } catch(e) {} }
+        else await this.saveItems();
         this.renderItems();
         this.showMessage('Item duplicated', 'success');
     },
@@ -1716,16 +1793,49 @@ const app = {
     },
 
     /* ── Persistence ──────────────────────────────────────── */
-    showMessage(text, type) {
+    showMessage(text, type, duration = 3500) {
         const msg = document.getElementById('message');
         msg.textContent = text;
         msg.className = `message ${type}`;
-        setTimeout(() => { msg.className = 'message'; }, 3500);
+        clearTimeout(this._msgTimer);
+        this._msgTimer = setTimeout(() => { msg.className = 'message'; }, duration);
+    },
+
+    /* Save a single item to API with optimistic locking.
+       Pass the original updatedAt so the server can detect conflicts. */
+    async saveItemApi(item, originalUpdatedAt) {
+        const payload = {
+            ...item,
+            lastModifiedBy: this.currentUser || 'Unknown',
+            _clientUpdatedAt: originalUpdatedAt ?? item.updatedAt ?? null,
+        };
+        const res = await fetch('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (res.status === 409) {
+            const body = await res.json();
+            // Conflict: update our local copy with server version, then alert user
+            const idx = this.items.findIndex(i => i.id === item.id);
+            if (idx !== -1 && body.serverItem) this.items[idx] = body.serverItem;
+            this._renderCurrentTab();
+            throw new Error(body.message || 'Conflict: item was modified by someone else.');
+        }
+        if (!res.ok) throw new Error(await res.text());
+
+        const saved = await res.json();
+        // Update local copy with server-stamped updatedAt
+        const idx = this.items.findIndex(i => i.id === saved.id);
+        if (idx !== -1) this.items[idx] = saved;
+        return saved;
     },
 
     async saveItems() {
         if (this.useApi) {
             try {
+                // Bulk PUT used for import — no locking needed
                 await fetch('/api/items', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.items) });
                 return;
             } catch (e) { console.warn('API save failed, using localStorage', e); }
