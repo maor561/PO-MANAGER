@@ -1098,11 +1098,11 @@ input[type="file"] { display: none; }
 
 /* ─── Received Report Section ───────────────────────────────── */
 .received-section {
-    flex: 1; min-height: 0; overflow-y: auto;
+    flex: 1; min-height: 0; overflow: hidden;
     background: var(--gray-50);
     display: flex; flex-direction: column;
-    padding: 20px 24px 32px;
-    gap: 16px;
+    padding: 20px 24px 12px;
+    gap: 12px;
 }
 .received-section.hidden { display: none; }
 
@@ -1162,9 +1162,12 @@ input[type="file"] { display: none; }
 
 /* Table */
 .recv-table-wrap {
+    flex: 1; min-height: 0;
     background: white; border: 1px solid var(--gray-200);
     border-radius: 10px; box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 12px;
 }
 .recv-table {
     width: 100%; border-collapse: collapse;
