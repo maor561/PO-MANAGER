@@ -38,6 +38,7 @@ const app = {
     viewMode: 'table',
     compactMode: false,
     hiddenColumns: new Set(),
+    recvSort: { col: 'hslwhDate', dir: 'asc' },
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -1363,26 +1364,68 @@ const app = {
     },
 
     /* ── Received Report ─────────────────────────────────── */
+    setRecvSort(col) {
+        if (this.recvSort.col === col) {
+            this.recvSort.dir = this.recvSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.recvSort = { col, dir: 'asc' };
+        }
+        this.renderReceived();
+    },
+
     renderReceived() {
-        const from = document.getElementById('recvFromDate')?.value;
-        const to   = document.getElementById('recvToDate')?.value;
-        const body = document.getElementById('recvBody');
-        const empty= document.getElementById('recvEmpty');
+        const from    = document.getElementById('recvFromDate')?.value;
+        const to      = document.getElementById('recvToDate')?.value;
+        const body    = document.getElementById('recvBody');
+        const empty   = document.getElementById('recvEmpty');
         const summary = document.getElementById('recvSummary');
+        const thead   = document.getElementById('recvThead');
         if (!body) return;
+
+        const { col: sortCol, dir: sortDir } = this.recvSort;
 
         // Filter: must have hslwhDate, within range
         let items = this.items.filter(i => !!i.hslwhDate);
         if (from) items = items.filter(i => i.hslwhDate >= from);
         if (to)   items = items.filter(i => i.hslwhDate <= to);
 
-        // Sort by HSL WH date ascending
-        items = items.slice().sort((a, b) => a.hslwhDate < b.hslwhDate ? -1 : 1);
+        // Sort by selected column
+        const colKey = {
+            'num':         (i, idx) => idx,
+            'partNumber':  i => (i.partNumber  || '').toLowerCase(),
+            'description': i => (i.description || '').toLowerCase(),
+            'revision':    i => (i.revision    || '').toLowerCase(),
+            'quantity':    i => parseFloat(i.quantity) || 0,
+            'supplier':    i => (i.supplier    || '').toLowerCase(),
+            'hslwhDate':   i => i.hslwhDate || '',
+        };
+        const keyFn = colKey[sortCol] || colKey['hslwhDate'];
+        items = items.slice().sort((a, b) => {
+            const av = keyFn(a), bv = keyFn(b);
+            const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+            return sortDir === 'asc' ? cmp : -cmp;
+        });
+
+        // Render sortable header
+        const arrow = col => {
+            if (sortCol !== col) return '<span class="recv-sort-icon">⇅</span>';
+            return `<span class="recv-sort-icon active">${sortDir === 'asc' ? '↑' : '↓'}</span>`;
+        };
+        if (thead) {
+            thead.innerHTML = `<tr>
+                <th class="recv-th" onclick="app.setRecvSort('num')">#${arrow('num')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('partNumber')">Part Number${arrow('partNumber')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('description')">Description${arrow('description')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('revision')">Rev${arrow('revision')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('quantity')">Qty${arrow('quantity')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('supplier')">Supplier${arrow('supplier')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('hslwhDate')">HSL WH Date${arrow('hslwhDate')}</th>
+            </tr>`;
+        }
 
         // Summary KPIs
-        const totalQty = items.reduce((s, i) => s + (parseFloat(i.quantity) || 0), 0);
+        const totalQty  = items.reduce((s, i) => s + (parseFloat(i.quantity) || 0), 0);
         const suppliers = new Set(items.filter(i => i.supplier).map(i => i.supplier)).size;
-        const CURRENCY = { ILS: '₪', USD: '$', EUR: '€' };
         const rangeLabel = (from || to)
             ? `${from ? this.isoToDisplay(from) : '—'} → ${to ? this.isoToDisplay(to) : '—'}`
             : 'All time';
@@ -1401,18 +1444,15 @@ const app = {
         }
         empty.style.display = 'none';
 
-        body.innerHTML = items.map((item, idx) => {
-            const sym = CURRENCY[item.currency || 'ILS'] || '₪';
-            return `<tr>
-                <td class="recv-num">${idx + 1}</td>
-                <td class="recv-pn">${item.partNumber || '—'}</td>
-                <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(item.description||'').replace(/"/g,'&quot;')}">${item.description || '—'}</td>
-                <td>${item.revision || '—'}</td>
-                <td class="recv-qty">${item.quantity || '—'}</td>
-                <td>${item.supplier || '—'}</td>
-                <td class="recv-date">${this.formatDate(item.hslwhDate)}</td>
-            </tr>`;
-        }).join('');
+        body.innerHTML = items.map((item, idx) => `<tr>
+            <td class="recv-num">${idx + 1}</td>
+            <td class="recv-pn">${item.partNumber || '—'}</td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(item.description||'').replace(/"/g,'&quot;')}">${item.description || '—'}</td>
+            <td>${item.revision || '—'}</td>
+            <td class="recv-qty">${item.quantity || '—'}</td>
+            <td>${item.supplier || '—'}</td>
+            <td class="recv-date">${this.formatDate(item.hslwhDate)}</td>
+        </tr>`).join('');
     },
 
     clearRecvFilter() {

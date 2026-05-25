@@ -238,15 +238,15 @@
         <!-- Table -->
         <div class="recv-table-wrap">
             <table class="recv-table" id="recvTable">
-                <thead>
+                <thead id="recvThead">
                     <tr>
-                        <th>#</th>
-                        <th>Part Number</th>
-                        <th>Description</th>
-                        <th>Rev</th>
-                        <th>Qty</th>
-                        <th>Supplier</th>
-                        <th>HSL WH Date</th>
+                        <th class="recv-th" onclick="app.setRecvSort('num')"># <span class="recv-sort-icon">⇅</span></th>
+                        <th class="recv-th" onclick="app.setRecvSort('partNumber')">Part Number <span class="recv-sort-icon">⇅</span></th>
+                        <th class="recv-th" onclick="app.setRecvSort('description')">Description <span class="recv-sort-icon">⇅</span></th>
+                        <th class="recv-th" onclick="app.setRecvSort('revision')">Rev <span class="recv-sort-icon">⇅</span></th>
+                        <th class="recv-th" onclick="app.setRecvSort('quantity')">Qty <span class="recv-sort-icon">⇅</span></th>
+                        <th class="recv-th" onclick="app.setRecvSort('supplier')">Supplier <span class="recv-sort-icon">⇅</span></th>
+                        <th class="recv-th" onclick="app.setRecvSort('hslwhDate')">HSL WH Date <span class="recv-sort-icon active">↑</span></th>
                     </tr>
                 </thead>
                 <tbody id="recvBody"></tbody>
