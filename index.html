@@ -91,6 +91,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Dashboard
         </button>
+        <button class="view-tab" onclick="app.switchView('received')" id="receivedTabBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Received
+        </button>
     </div>
 
     <!-- ── Dashboard Section ──────────────────────────── -->
@@ -200,6 +204,54 @@
                 </thead>
                 <tbody id="dashAtRiskBody"></tbody>
             </table>
+        </div>
+
+    </div>
+
+    <!-- ── Received Report Section ───────────────────── -->
+    <div id="receivedSection" class="received-section hidden">
+
+        <!-- Header bar -->
+        <div class="recv-header">
+            <div class="recv-header-left">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="recv-title">Received Items Report</span>
+            </div>
+            <div class="recv-header-right">
+                <div class="recv-filter">
+                    <label>From</label>
+                    <input type="date" id="recvFromDate" onchange="app.renderReceived()">
+                    <label>To</label>
+                    <input type="date" id="recvToDate" onchange="app.renderReceived()">
+                    <button class="btn-link" onclick="app.clearRecvFilter()">✕ Reset</button>
+                </div>
+                <button class="recv-print-btn" onclick="app.printReceived()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Print / PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary strip -->
+        <div class="recv-summary" id="recvSummary"></div>
+
+        <!-- Table -->
+        <div class="recv-table-wrap">
+            <table class="recv-table" id="recvTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Part Number</th>
+                        <th>Description</th>
+                        <th>Rev</th>
+                        <th>Qty</th>
+                        <th>Supplier</th>
+                        <th>HSL WH Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recvBody"></tbody>
+            </table>
+            <div class="recv-empty" id="recvEmpty" style="display:none">No received items in selected range.</div>
         </div>
 
     </div>

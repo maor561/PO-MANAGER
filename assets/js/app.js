@@ -1311,28 +1311,39 @@ const app = {
     /* ── Dashboard ─────────────────────────────────────── */
     switchView(view) {
         const dashboard     = document.getElementById('dashboardSection');
+        const received      = document.getElementById('receivedSection');
         const filterBar     = document.querySelector('.filter-bar');
         const tableWrapper  = document.querySelector('.table-wrapper');
         const cardsWrapper  = document.getElementById('cardsWrapper');
         const dcWrapper     = document.getElementById('desktopCardsWrapper');
         const tableTab      = document.getElementById('tableTabBtn');
         const dashTab       = document.getElementById('dashboardTabBtn');
+        const recvTab       = document.getElementById('receivedTabBtn');
+
+        // Hide everything first
+        dashboard.classList.add('hidden');
+        received?.classList.add('hidden');
+        filterBar.style.display = 'none';
+        tableWrapper.style.display = 'none';
+        if (cardsWrapper) cardsWrapper.style.setProperty('display', 'none', 'important');
+        if (dcWrapper) dcWrapper.style.display = 'none';
+        tableTab.classList.remove('active');
+        dashTab.classList.remove('active');
+        recvTab?.classList.remove('active');
 
         if (view === 'dashboard') {
             dashboard.classList.remove('hidden');
-            filterBar.style.display = 'none';
-            tableWrapper.style.display = 'none';
-            if (cardsWrapper) cardsWrapper.style.setProperty('display', 'none', 'important');
-            if (dcWrapper) dcWrapper.style.display = 'none';
-            tableTab.classList.remove('active');
             dashTab.classList.add('active');
             this.renderDashboard();
+        } else if (view === 'received') {
+            received?.classList.remove('hidden');
+            recvTab?.classList.add('active');
+            this.renderReceived();
         } else {
-            dashboard.classList.add('hidden');
+            // table view
             filterBar.style.display = '';
             if (cardsWrapper) cardsWrapper.style.removeProperty('display');
             tableTab.classList.add('active');
-            dashTab.classList.remove('active');
             this.renderItems();
         }
     },
@@ -1349,6 +1360,71 @@ const app = {
         document.getElementById('dashFromDate').value = '';
         document.getElementById('dashToDate').value = '';
         this.renderDashboard();
+    },
+
+    /* ── Received Report ─────────────────────────────────── */
+    renderReceived() {
+        const from = document.getElementById('recvFromDate')?.value;
+        const to   = document.getElementById('recvToDate')?.value;
+        const body = document.getElementById('recvBody');
+        const empty= document.getElementById('recvEmpty');
+        const summary = document.getElementById('recvSummary');
+        if (!body) return;
+
+        // Filter: must have hslwhDate, within range
+        let items = this.items.filter(i => !!i.hslwhDate);
+        if (from) items = items.filter(i => i.hslwhDate >= from);
+        if (to)   items = items.filter(i => i.hslwhDate <= to);
+
+        // Sort by HSL WH date ascending
+        items = items.slice().sort((a, b) => a.hslwhDate < b.hslwhDate ? -1 : 1);
+
+        // Summary KPIs
+        const totalQty = items.reduce((s, i) => s + (parseFloat(i.quantity) || 0), 0);
+        const suppliers = new Set(items.filter(i => i.supplier).map(i => i.supplier)).size;
+        const CURRENCY = { ILS: '₪', USD: '$', EUR: '€' };
+        const rangeLabel = (from || to)
+            ? `${from ? this.isoToDisplay(from) : '—'} → ${to ? this.isoToDisplay(to) : '—'}`
+            : 'All time';
+
+        summary.innerHTML = `
+            <div class="recv-kpi"><span class="recv-kpi-label">Items Received</span><span class="recv-kpi-value">${items.length}</span></div>
+            <div class="recv-kpi"><span class="recv-kpi-label">Total Qty</span><span class="recv-kpi-value">${totalQty || '—'}</span></div>
+            <div class="recv-kpi"><span class="recv-kpi-label">Suppliers</span><span class="recv-kpi-value">${suppliers}</span></div>
+            <div class="recv-kpi" style="flex:1;min-width:160px"><span class="recv-kpi-label">Period</span><span class="recv-kpi-value" style="font-size:14px;font-weight:700;color:var(--gray-600)">${rangeLabel}</span></div>
+        `;
+
+        if (!items.length) {
+            body.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+
+        body.innerHTML = items.map((item, idx) => {
+            const sym = CURRENCY[item.currency || 'ILS'] || '₪';
+            return `<tr>
+                <td class="recv-num">${idx + 1}</td>
+                <td class="recv-pn">${item.partNumber || '—'}</td>
+                <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(item.description||'').replace(/"/g,'&quot;')}">${item.description || '—'}</td>
+                <td>${item.revision || '—'}</td>
+                <td class="recv-qty">${item.quantity || '—'}</td>
+                <td>${item.supplier || '—'}</td>
+                <td class="recv-date">${this.formatDate(item.hslwhDate)}</td>
+            </tr>`;
+        }).join('');
+    },
+
+    clearRecvFilter() {
+        document.getElementById('recvFromDate').value = '';
+        document.getElementById('recvToDate').value = '';
+        this.renderReceived();
+    },
+
+    printReceived() {
+        document.body.classList.add('print-received');
+        window.print();
+        document.body.classList.remove('print-received');
     },
 
     getDashItems() {
