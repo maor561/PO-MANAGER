@@ -39,6 +39,7 @@ const app = {
     compactMode: false,
     hiddenColumns: new Set(),
     recvSort: { col: 'hslwhDate', dir: 'asc' },
+    activeTab: 'table',
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -69,7 +70,13 @@ const app = {
                 if (changed) {
                     this.items = fresh;
                     this.applyCurrentSort();
-                    this.renderItems();
+                    if (this.activeTab === 'received') {
+                        this.renderReceived();
+                    } else if (this.activeTab === 'dashboard') {
+                        this.renderDashboard();
+                    } else {
+                        this.renderItems();
+                    }
                     this.showRefreshIndicator();
                 }
             } catch (e) {}
@@ -990,6 +997,11 @@ const app = {
 
     /* ── Render Items ─────────────────────────────────────── */
     renderItems() {
+        // Don't render the items table/cards if we're on another tab
+        if (this.activeTab && this.activeTab !== 'table') {
+            this.updateDashboard(); // still update header KPIs
+            return;
+        }
         this.updateDashboard();
         this.populateFilterDropdowns();
 
@@ -1333,15 +1345,18 @@ const app = {
         recvTab?.classList.remove('active');
 
         if (view === 'dashboard') {
+            this.activeTab = 'dashboard';
             dashboard.classList.remove('hidden');
             dashTab.classList.add('active');
             this.renderDashboard();
         } else if (view === 'received') {
+            this.activeTab = 'received';
             received?.classList.remove('hidden');
             recvTab?.classList.add('active');
             this.renderReceived();
         } else {
             // table view
+            this.activeTab = 'table';
             filterBar.style.display = '';
             if (cardsWrapper) cardsWrapper.style.removeProperty('display');
             tableTab.classList.add('active');
