@@ -41,6 +41,8 @@ const app = {
     recvSort: { col: 'hslwhDate', dir: 'asc' },
     activeTab: 'table',
     currentUser: '',
+    changelogUnlocked: false,
+    _changelogCache: null,
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -117,6 +119,7 @@ const app = {
     _renderCurrentTab() {
         if (this.activeTab === 'received') this.renderReceived();
         else if (this.activeTab === 'dashboard') this.renderDashboard();
+        else if (this.activeTab === 'changelog') { /* changelog doesn't need re-render on item change */ }
         else this.renderItems();
     },
 
@@ -1402,6 +1405,7 @@ const app = {
     switchView(view) {
         const dashboard     = document.getElementById('dashboardSection');
         const received      = document.getElementById('receivedSection');
+        const changelog     = document.getElementById('changelogSection');
         const filterBar     = document.querySelector('.filter-bar');
         const tableWrapper  = document.querySelector('.table-wrapper');
         const cardsWrapper  = document.getElementById('cardsWrapper');
@@ -1409,10 +1413,12 @@ const app = {
         const tableTab      = document.getElementById('tableTabBtn');
         const dashTab       = document.getElementById('dashboardTabBtn');
         const recvTab       = document.getElementById('receivedTabBtn');
+        const clTab         = document.getElementById('changelogTabBtn');
 
         // Hide everything first
         dashboard.classList.add('hidden');
         received?.classList.add('hidden');
+        changelog?.classList.add('hidden');
         filterBar.style.display = 'none';
         tableWrapper.style.display = 'none';
         if (cardsWrapper) cardsWrapper.style.setProperty('display', 'none', 'important');
@@ -1420,6 +1426,7 @@ const app = {
         tableTab.classList.remove('active');
         dashTab.classList.remove('active');
         recvTab?.classList.remove('active');
+        clTab?.classList.remove('active');
 
         if (view === 'dashboard') {
             this.activeTab = 'dashboard';
@@ -1431,6 +1438,11 @@ const app = {
             received?.classList.remove('hidden');
             recvTab?.classList.add('active');
             this.renderReceived();
+        } else if (view === 'changelog') {
+            this.activeTab = 'changelog';
+            changelog?.classList.remove('hidden');
+            clTab?.classList.add('active');
+            this._initChangelogView();
         } else {
             // table view
             this.activeTab = 'table';
@@ -1453,6 +1465,189 @@ const app = {
         document.getElementById('dashFromDate').value = '';
         document.getElementById('dashToDate').value = '';
         this.renderDashboard();
+    },
+
+    /* ── Change Log ──────────────────────────────────────── */
+    _initChangelogView() {
+        // Check sessionStorage for unlock state
+        this.changelogUnlocked = sessionStorage.getItem('cl_unlocked') === '1';
+        const lock    = document.getElementById('changelogLock');
+        const content = document.getElementById('changelogContent');
+        if (this.changelogUnlocked) {
+            lock.style.display    = 'none';
+            content.style.display = 'flex';
+            this.renderChangelog();
+        } else {
+            lock.style.display    = '';
+            content.style.display = 'none';
+            // Focus password field
+            setTimeout(() => document.getElementById('changelogPasswordInput')?.focus(), 50);
+        }
+    },
+
+    unlockChangelog() {
+        const input = document.getElementById('changelogPasswordInput');
+        const error = document.getElementById('changelogLockError');
+        if (input.value === '3109') {
+            sessionStorage.setItem('cl_unlocked', '1');
+            this.changelogUnlocked = true;
+            document.getElementById('changelogLock').style.display    = 'none';
+            document.getElementById('changelogContent').style.display = 'flex';
+            this.renderChangelog();
+        } else {
+            error.textContent = '❌ Incorrect password.';
+            input.value = '';
+            input.classList.add('error');
+            setTimeout(() => { input.classList.remove('error'); error.textContent = ''; }, 2000);
+        }
+    },
+
+    async refreshChangelog() {
+        this._changelogCache = null;
+        await this.renderChangelog();
+    },
+
+    clearChangelogFilter() {
+        const uf = document.getElementById('clUserFilter');
+        const af = document.getElementById('clActionFilter');
+        if (uf) uf.value = '';
+        if (af) af.value = '';
+        this.renderChangelog();
+    },
+
+    async renderChangelog() {
+        const timeline = document.getElementById('clTimeline');
+        const empty    = document.getElementById('clEmpty');
+        const summary  = document.getElementById('clSummary');
+        if (!timeline) return;
+
+        timeline.innerHTML = '<div class="cl-loading">Loading…</div>';
+        if (empty) empty.style.display = 'none';
+
+        try {
+            // Fetch (with simple cache)
+            if (!this._changelogCache) {
+                const res = await fetch('/api/changelog?limit=500');
+                if (!res.ok) throw new Error('Failed to load changelog');
+                this._changelogCache = await res.json();
+            }
+            let entries = this._changelogCache;
+
+            // Populate user filter
+            const uf = document.getElementById('clUserFilter');
+            if (uf) {
+                const users = [...new Set(entries.map(e => e.user).filter(Boolean))].sort();
+                const prev  = uf.value;
+                uf.innerHTML = '<option value="">All Users</option>' +
+                    users.map(u => `<option value="${this._esc(u)}" ${u === prev ? 'selected' : ''}>${this._esc(u)}</option>`).join('');
+                if (prev) uf.value = prev;
+            }
+
+            // Apply filters
+            const userFilter   = uf?.value || '';
+            const actionFilter = document.getElementById('clActionFilter')?.value || '';
+            if (userFilter)   entries = entries.filter(e => e.user === userFilter);
+            if (actionFilter) entries = entries.filter(e => e.action === actionFilter);
+
+            // Summary
+            if (summary) {
+                const counts = { created: 0, updated: 0, deleted: 0, imported: 0 };
+                entries.forEach(e => { if (counts[e.action] !== undefined) counts[e.action]++; });
+                summary.innerHTML =
+                    `<span class="cl-badge badge-created">${counts.created} Created</span>` +
+                    `<span class="cl-badge badge-updated">${counts.updated} Updated</span>` +
+                    `<span class="cl-badge badge-deleted">${counts.deleted} Deleted</span>` +
+                    `<span class="cl-badge badge-imported">${counts.imported} Imported</span>` +
+                    `<span class="cl-badge badge-total">${entries.length} Total</span>`;
+            }
+
+            if (!entries.length) {
+                timeline.innerHTML = '';
+                if (empty) empty.style.display = '';
+                return;
+            }
+
+            // Group entries by date
+            const groups = {};
+            entries.forEach(e => {
+                const date = e.timestamp ? e.timestamp.slice(0, 10) : 'Unknown';
+                if (!groups[date]) groups[date] = [];
+                groups[date].push(e);
+            });
+
+            const actionIcons   = { created: '➕', updated: '✏️', deleted: '🗑️', imported: '📥' };
+            const actionLabels  = { created: 'Created', updated: 'Updated', deleted: 'Deleted', imported: 'Imported' };
+
+            let html = '';
+            Object.keys(groups).sort((a, b) => b.localeCompare(a)).forEach(date => {
+                const label = this._formatDateLabel(date);
+                html += `<div class="cl-date-group"><div class="cl-date-label">${label}</div>`;
+                groups[date].forEach(entry => {
+                    const action  = entry.action || 'updated';
+                    const icon    = actionIcons[action]  || '📝';
+                    const badge   = actionLabels[action] || action;
+                    const time    = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    const user    = this._esc(entry.user || 'Unknown');
+                    const pn      = this._esc(entry.partNumber || '');
+                    const proj    = this._esc(entry.project || '');
+
+                    // Build field changes list
+                    let changesHtml = '';
+                    if (entry.changes && entry.changes.length) {
+                        changesHtml = '<div class="cl-changes">' +
+                            entry.changes.map(c =>
+                                `<div class="cl-change-row">
+                                    <span class="cl-field-name">${this._esc(c.field)}</span>
+                                    <span class="cl-from">${this._esc(c.from) || '<em>empty</em>'}</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                    <span class="cl-to">${this._esc(c.to) || '<em>empty</em>'}</span>
+                                </div>`
+                            ).join('') +
+                        '</div>';
+                    }
+
+                    html += `
+                        <div class="cl-entry cl-entry-${action}">
+                            <div class="cl-entry-left">
+                                <div class="cl-dot cl-dot-${action}"></div>
+                                <div class="cl-line"></div>
+                            </div>
+                            <div class="cl-entry-body">
+                                <div class="cl-entry-header">
+                                    <span class="cl-action-badge badge-${action}">${icon} ${badge}</span>
+                                    ${pn ? `<span class="cl-pn">${pn}</span>` : ''}
+                                    ${proj ? `<span class="cl-proj">📁 ${proj}</span>` : ''}
+                                    <span class="cl-spacer"></span>
+                                    <span class="cl-user">👤 ${user}</span>
+                                    <span class="cl-time">🕐 ${time}</span>
+                                </div>
+                                ${changesHtml}
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+            });
+
+            timeline.innerHTML = html;
+
+        } catch (err) {
+            timeline.innerHTML = `<div class="cl-error">⚠️ ${this._esc(err.message)}</div>`;
+        }
+    },
+
+    _formatDateLabel(dateStr) {
+        if (!dateStr || dateStr === 'Unknown') return 'Unknown Date';
+        const d = new Date(dateStr + 'T00:00:00');
+        const today = new Date(); today.setHours(0,0,0,0);
+        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+        if (d.getTime() === today.getTime()) return 'Today';
+        if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+        return d.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    },
+
+    _esc(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     },
 
     /* ── Received Report ─────────────────────────────────── */

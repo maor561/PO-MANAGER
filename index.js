@@ -28,9 +28,70 @@ async function connectMongo() {
 
 async function getCollection() {
     const database = await connectMongo();
-    const collection = database.collection('items');
-    await collection.createIndex({ id: 1 });
-    return collection;
+    const col = database.collection('items');
+    await col.createIndex({ id: 1 });
+    return col;
+}
+
+async function getChangelog() {
+    const database = await connectMongo();
+    const col = database.collection('changelog');
+    await col.createIndex({ timestamp: -1 });
+    return col;
+}
+
+// ── Change logger ────────────────────────────────────────────────
+const TRACKED_FIELDS = [
+    { key: 'partNumber',   label: 'Part Number' },
+    { key: 'description',  label: 'Description' },
+    { key: 'revision',     label: 'Revision' },
+    { key: 'quantity',     label: 'Qty' },
+    { key: 'cost',         label: 'Cost' },
+    { key: 'currency',     label: 'Currency' },
+    { key: 'supplier',     label: 'Supplier' },
+    { key: 'project',      label: 'Project' },
+    { key: 'pd',           label: 'PR Date' },
+    { key: 'po',           label: 'PO Date' },
+    { key: 'poNumber',     label: 'PO#' },
+    { key: 'promiseDate',  label: 'Promise Date' },
+    { key: 'arrivalDate',  label: 'Arrival Date' },
+    { key: 'hslwhDate',    label: 'HSL WH Date' },
+    { key: 'eqDate',       label: 'EQ Date' },
+    { key: 'cocDate',      label: 'COC Date' },
+    { key: 'trackingNumber', label: 'Tracking#' },
+    { key: 'wd',           label: 'Working Days' },
+    { key: 'notes',        label: 'Notes' },
+];
+
+async function logChange({ action, item, oldItem, user }) {
+    try {
+        const cl = await getChangelog();
+        const entry = {
+            timestamp:  new Date().toISOString(),
+            user:       user || 'Unknown',
+            action,                        // 'created' | 'updated' | 'deleted' | 'imported'
+            itemId:     item?.id || '',
+            partNumber: item?.partNumber || oldItem?.partNumber || '',
+            project:    item?.project    || oldItem?.project    || '',
+            changes:    [],
+        };
+
+        if (action === 'updated' && oldItem && item) {
+            TRACKED_FIELDS.forEach(({ key, label }) => {
+                const from = String(oldItem[key] ?? '');
+                const to   = String(item[key]    ?? '');
+                if (from !== to) {
+                    entry.changes.push({ field: label, from, to });
+                }
+            });
+            // Skip log if nothing actually changed
+            if (entry.changes.length === 0) return;
+        }
+
+        await cl.insertOne(entry);
+    } catch (e) {
+        console.warn('Changelog write error:', e.message);
+    }
 }
 
 // ── SSE broadcast ────────────────────────────────────────────────
@@ -48,66 +109,59 @@ app.get('/api/events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // nginx compatibility
+    res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
-    // Keep-alive ping every 25s to prevent proxy timeouts
     const ping = setInterval(() => {
         try { res.write(': ping\n\n'); }
         catch (e) { clearInterval(ping); }
     }, 25000);
 
     sseClients.add(res);
-    console.log(`SSE client connected (${sseClients.size} total)`);
-
-    req.on('close', () => {
-        clearInterval(ping);
-        sseClients.delete(res);
-        console.log(`SSE client disconnected (${sseClients.size} total)`);
-    });
+    req.on('close', () => { clearInterval(ping); sseClients.delete(res); });
 });
 
-// ── API Routes ───────────────────────────────────────────────────
+// ── Items API ────────────────────────────────────────────────────
 app.get('/api/items', async (req, res) => {
     try {
-        const collection = await getCollection();
-        const items = await collection.find({}).sort({ createdAt: 1 }).toArray();
+        const col = await getCollection();
+        const items = await col.find({}).sort({ createdAt: 1 }).toArray();
         res.json(items.map(({ _id, ...item }) => item));
     } catch (err) {
-        console.error('GET /api/items error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// POST — create or update single item (with optimistic locking)
+// POST — upsert single item (with optimistic locking)
 app.post('/api/items', async (req, res) => {
     try {
         const item = req.body;
         if (!item || !item.id) return res.status(400).json({ error: 'Missing item id' });
 
-        const collection = await getCollection();
+        const col = await getCollection();
+        const existing = await col.findOne({ id: item.id });
 
-        // Optimistic locking: if client sent clientUpdatedAt, check it matches DB
-        if (item._clientUpdatedAt !== undefined) {
-            const existing = await collection.findOne({ id: item.id });
-            if (existing && existing.updatedAt !== item._clientUpdatedAt) {
+        // Optimistic locking
+        if (item._clientUpdatedAt !== undefined && existing) {
+            if (existing.updatedAt !== item._clientUpdatedAt) {
                 return res.status(409).json({
                     error: 'conflict',
                     message: `This item was already modified by ${existing.lastModifiedBy || 'someone else'} at ${existing.updatedAt}. Reload to see the latest version.`,
-                    serverItem: (({ _id, ...i }) => i)(existing)
+                    serverItem: (({ _id, ...i }) => i)(existing),
                 });
             }
-            delete item._clientUpdatedAt;
         }
-
-        // Stamp server-side timestamp
+        delete item._clientUpdatedAt;
         item.updatedAt = new Date().toISOString();
 
-        await collection.updateOne({ id: item.id }, { $set: item }, { upsert: true });
+        await col.updateOne({ id: item.id }, { $set: item }, { upsert: true });
         res.json(item);
 
-        // Broadcast to all other SSE clients
-        broadcast('items-changed', { action: 'upsert', id: item.id, by: item.lastModifiedBy || '' });
+        // Log change
+        const action = existing ? 'updated' : 'created';
+        await logChange({ action, item, oldItem: existing ? (({ _id, ...i }) => i)(existing) : null, user: item.lastModifiedBy });
+
+        broadcast('items-changed', { action, id: item.id, by: item.lastModifiedBy || '' });
     } catch (err) {
         console.error('POST /api/items error:', err);
         res.status(500).json({ error: err.message });
@@ -123,14 +177,15 @@ app.put('/api/items', async (req, res) => {
         const now = new Date().toISOString();
         const stamped = items.map(i => ({ ...i, updatedAt: now }));
 
-        const collection = await getCollection();
-        await collection.deleteMany({});
-        if (stamped.length > 0) await collection.insertMany(stamped);
+        const col = await getCollection();
+        await col.deleteMany({});
+        if (stamped.length > 0) await col.insertMany(stamped);
 
         res.json({ success: true, count: stamped.length });
+
+        await logChange({ action: 'imported', item: { id: 'bulk', partNumber: `${stamped.length} items` }, user: items[0]?.lastModifiedBy || 'Unknown' });
         broadcast('items-changed', { action: 'bulk', count: stamped.length });
     } catch (err) {
-        console.error('PUT /api/items error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -141,12 +196,26 @@ app.delete('/api/items', async (req, res) => {
         const { id } = req.query;
         if (!id) return res.status(400).json({ error: 'Missing id' });
 
-        const collection = await getCollection();
-        await collection.deleteOne({ id });
+        const col = await getCollection();
+        const existing = await col.findOne({ id });
+        await col.deleteOne({ id });
         res.json({ success: true });
+
+        await logChange({ action: 'deleted', item: existing ? (({ _id, ...i }) => i)(existing) : { id }, user: req.query.user || 'Unknown' });
         broadcast('items-changed', { action: 'delete', id });
     } catch (err) {
-        console.error('DELETE /api/items error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── Changelog API ────────────────────────────────────────────────
+app.get('/api/changelog', async (req, res) => {
+    try {
+        const cl = await getChangelog();
+        const limit = parseInt(req.query.limit) || 500;
+        const entries = await cl.find({}).sort({ timestamp: -1 }).limit(limit).toArray();
+        res.json(entries.map(({ _id, ...e }) => e));
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

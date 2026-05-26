@@ -96,6 +96,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
             Received
         </button>
+        <button class="view-tab" onclick="app.switchView('changelog')" id="changelogTabBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Change Log
+        </button>
     </div>
 
     <!-- ── Dashboard Section ──────────────────────────── -->
@@ -253,6 +257,68 @@
                 <tbody id="recvBody"></tbody>
             </table>
             <div class="recv-empty" id="recvEmpty" style="display:none">No received items in selected range.</div>
+        </div>
+
+    </div>
+
+    <!-- ── Changelog Section ─────────────────────────── -->
+    <div id="changelogSection" class="changelog-section hidden">
+
+        <!-- Lock screen -->
+        <div id="changelogLock" class="cl-lock-screen">
+            <div class="cl-lock-box">
+                <div class="cl-lock-icon">🔒</div>
+                <h3>Change Log</h3>
+                <p>This section is password protected.</p>
+                <div class="cl-lock-field">
+                    <input type="password" id="changelogPasswordInput" placeholder="Enter password…"
+                        onkeydown="if(event.key==='Enter') app.unlockChangelog()">
+                    <button class="btn-action" onclick="app.unlockChangelog()">Unlock</button>
+                </div>
+                <p id="changelogLockError" class="cl-lock-error"></p>
+            </div>
+        </div>
+
+        <!-- Changelog content (hidden until unlocked) -->
+        <div id="changelogContent" class="cl-content" style="display:none">
+
+            <!-- Header bar -->
+            <div class="cl-header">
+                <div class="cl-header-left">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span class="cl-title">Change Log</span>
+                </div>
+                <div class="cl-header-right">
+                    <div class="cl-filter">
+                        <label>User</label>
+                        <select id="clUserFilter" onchange="app.renderChangelog()">
+                            <option value="">All Users</option>
+                        </select>
+                        <label>Action</label>
+                        <select id="clActionFilter" onchange="app.renderChangelog()">
+                            <option value="">All Actions</option>
+                            <option value="created">Created</option>
+                            <option value="updated">Updated</option>
+                            <option value="deleted">Deleted</option>
+                            <option value="imported">Imported</option>
+                        </select>
+                    </div>
+                    <button class="btn-link" onclick="app.clearChangelogFilter()">✕ Reset</button>
+                    <button class="recv-print-btn" onclick="app.refreshChangelog()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary strip -->
+            <div class="cl-summary" id="clSummary"></div>
+
+            <!-- Timeline -->
+            <div class="cl-scroll" id="clScroll">
+                <div class="cl-timeline" id="clTimeline"></div>
+                <div class="cl-empty" id="clEmpty" style="display:none">No changelog entries found.</div>
+            </div>
         </div>
 
     </div>

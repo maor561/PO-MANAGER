@@ -1218,6 +1218,171 @@ input[type="file"] { display: none; }
     padding: 48px 0; font-size: 14px;
 }
 
+/* ─── Changelog Section ──────────────────────────────────────── */
+.changelog-section {
+    flex: 1; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+}
+.changelog-section.hidden { display: none !important; }
+.cl-content {
+    flex: 1; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+}
+
+/* Lock screen */
+.cl-lock-screen {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: var(--gray-50);
+}
+.cl-lock-box {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: 16px; padding: 48px 56px; text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    max-width: 400px; width: 100%;
+}
+.cl-lock-icon { font-size: 48px; margin-bottom: 12px; }
+.cl-lock-box h3 { font-size: 20px; font-weight: 700; color: var(--gray-800); margin: 0 0 6px; }
+.cl-lock-box p  { font-size: 14px; color: var(--gray-500); margin: 0 0 24px; }
+.cl-lock-field  { display: flex; gap: 10px; }
+.cl-lock-field input {
+    flex: 1; padding: 10px 14px; border: 1.5px solid var(--gray-300);
+    border-radius: 8px; font-size: 14px; outline: none;
+    transition: border-color .2s;
+}
+.cl-lock-field input:focus { border-color: var(--primary); }
+.cl-lock-field input.error { border-color: var(--danger); animation: shake .3s; }
+.cl-lock-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+@keyframes shake {
+    0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+}
+
+/* Changelog header bar */
+.cl-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; background: white;
+    border-bottom: 1px solid var(--gray-200);
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    gap: 12px; flex-wrap: wrap;
+}
+.cl-header-left { display: flex; align-items: center; gap: 8px; }
+.cl-title { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+.cl-header-right { display: flex; align-items: center; gap: 12px; }
+.cl-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cl-filter label { font-size: 12px; color: var(--gray-500); white-space: nowrap; }
+.cl-filter select {
+    padding: 5px 10px; border: 1px solid var(--gray-300); border-radius: 6px;
+    font-size: 13px; color: var(--gray-700); outline: none;
+    background: white;
+}
+
+/* Summary strip */
+.cl-summary {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 20px; background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+}
+.cl-badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+}
+.badge-created  { background: #d1fae5; color: #065f46; }
+.badge-updated  { background: #dbeafe; color: #1e40af; }
+.badge-deleted  { background: #fee2e2; color: #991b1b; }
+.badge-imported { background: #ede9fe; color: #5b21b6; }
+.badge-total    { background: var(--gray-200); color: var(--gray-700); }
+
+/* Scrollable timeline */
+.cl-scroll {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 20px 24px 32px;
+    background: var(--gray-50);
+}
+
+/* Date group */
+.cl-date-group { margin-bottom: 24px; }
+.cl-date-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--gray-400);
+    margin-bottom: 12px; padding-left: 24px;
+}
+
+/* Timeline entry */
+.cl-entry {
+    display: flex; align-items: flex-start;
+    gap: 0; margin-bottom: 10px;
+}
+.cl-entry-left {
+    display: flex; flex-direction: column; align-items: center;
+    width: 24px; flex-shrink: 0; padding-top: 2px;
+}
+.cl-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid white; flex-shrink: 0;
+    box-shadow: 0 0 0 2px currentColor;
+}
+.cl-dot-created  { background: #10b981; color: #10b981; }
+.cl-dot-updated  { background: #3b82f6; color: #3b82f6; }
+.cl-dot-deleted  { background: #ef4444; color: #ef4444; }
+.cl-dot-imported { background: #8b5cf6; color: #8b5cf6; }
+.cl-line { flex: 1; width: 2px; background: var(--gray-200); min-height: 12px; }
+.cl-entry:last-child .cl-line { display: none; }
+
+/* Entry body */
+.cl-entry-body {
+    flex: 1; background: white; border: 1px solid var(--gray-200);
+    border-radius: 10px; padding: 10px 14px;
+    margin-left: 10px; margin-bottom: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    transition: box-shadow .15s;
+}
+.cl-entry-body:hover { box-shadow: 0 3px 10px rgba(0,0,0,.08); }
+
+/* Entry header row */
+.cl-entry-header {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+}
+.cl-action-badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.cl-pn   { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+.cl-proj { font-size: 12px; color: var(--gray-500); }
+.cl-spacer { flex: 1; }
+.cl-user { font-size: 12px; color: var(--gray-500); }
+.cl-time { font-size: 12px; color: var(--gray-400); white-space: nowrap; }
+
+/* Field changes list */
+.cl-changes { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--gray-100); }
+.cl-change-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 0; font-size: 12px;
+    border-bottom: 1px dashed var(--gray-100);
+}
+.cl-change-row:last-child { border-bottom: none; }
+.cl-field-name {
+    min-width: 110px; font-weight: 600; color: var(--gray-600);
+    font-size: 11px;
+}
+.cl-from {
+    background: #fee2e2; color: #991b1b;
+    padding: 1px 6px; border-radius: 4px; font-size: 11px;
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cl-to {
+    background: #d1fae5; color: #065f46;
+    padding: 1px 6px; border-radius: 4px; font-size: 11px;
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cl-from em, .cl-to em { color: var(--gray-400); font-style: italic; }
+
+/* Loading / error states */
+.cl-loading { text-align: center; padding: 48px 0; color: var(--gray-400); font-size: 14px; }
+.cl-error   { text-align: center; padding: 32px 0; color: var(--danger); font-size: 14px; }
+.cl-empty   { text-align: center; padding: 48px 0; color: var(--gray-400); font-size: 14px; }
+
 /* ─── Print Styles ───────────────────────────────────────────── */
 @media print {
     body { background: white !important; font-size: 11px; }
