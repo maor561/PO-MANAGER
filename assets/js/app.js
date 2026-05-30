@@ -56,7 +56,7 @@ const app = {
         this.renderStagesSettings();
         this.setupTablePan();
         this.setupMobileUI();
-        this.connectSSE();          // real-time push (replaces polling)
+        // SSE removed — polling handles real-time sync (see startAutoRefresh)
         this.startAutoRefresh();    // fallback polling (30s)
         document.getElementById('compactBtn')?.classList.toggle('vm-active', this.compactMode);
     },
@@ -82,38 +82,6 @@ const app = {
     _updateUserBadge() {
         const badge = document.getElementById('userBadge');
         if (badge) { badge.textContent = '👤 ' + this.currentUser; badge.style.display = ''; }
-    },
-
-    /* ── SSE real-time sync ───────────────────────────────── */
-    connectSSE() {
-        if (!this.useApi) return;
-        if (typeof EventSource === 'undefined') return;
-
-        const es = new EventSource('/api/events');
-
-        es.addEventListener('items-changed', async (e) => {
-            try {
-                const payload = JSON.parse(e.data);
-                // Reload fresh data from server
-                const res = await fetch('/api/items');
-                if (!res.ok) return;
-                const fresh = await res.json();
-                this.items = fresh;
-                this.applyCurrentSort();
-                this._renderCurrentTab();
-                // Show who triggered the update
-                const by = payload.by ? ` by ${payload.by}` : '';
-                this.showMessage(`↻ Updated${by}`, 'info', 2000);
-            } catch (err) {}
-        });
-
-        es.onerror = () => {
-            es.close();
-            // Reconnect after 5s
-            setTimeout(() => this.connectSSE(), 5000);
-        };
-
-        this._sseSource = es;
     },
 
     _renderCurrentTab() {

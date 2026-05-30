@@ -42,25 +42,25 @@ async function getChangelog() {
 
 // ── Change logger ────────────────────────────────────────────────
 const TRACKED_FIELDS = [
-    { key: 'partNumber',   label: 'Part Number' },
-    { key: 'description',  label: 'Description' },
-    { key: 'revision',     label: 'Revision' },
-    { key: 'quantity',     label: 'Qty' },
-    { key: 'cost',         label: 'Cost' },
-    { key: 'currency',     label: 'Currency' },
-    { key: 'supplier',     label: 'Supplier' },
-    { key: 'project',      label: 'Project' },
-    { key: 'pd',           label: 'PR Date' },
-    { key: 'po',           label: 'PO Date' },
-    { key: 'poNumber',     label: 'PO#' },
-    { key: 'promiseDate',  label: 'Promise Date' },
-    { key: 'arrivalDate',  label: 'Arrival Date' },
-    { key: 'hslwhDate',    label: 'HSL WH Date' },
-    { key: 'eqDate',       label: 'EQ Date' },
-    { key: 'cocDate',      label: 'COC Date' },
-    { key: 'trackingNumber', label: 'Tracking#' },
-    { key: 'wd',           label: 'Working Days' },
-    { key: 'notes',        label: 'Notes' },
+    { key: 'partNumber',     label: 'Part Number'  },
+    { key: 'description',   label: 'Description'  },
+    { key: 'revision',      label: 'Revision'      },
+    { key: 'quantity',      label: 'Qty'           },
+    { key: 'cost',          label: 'Cost'          },
+    { key: 'currency',      label: 'Currency'      },
+    { key: 'supplier',      label: 'Supplier'      },
+    { key: 'project',       label: 'Project'       },
+    { key: 'pd',            label: 'PR Date'       },
+    { key: 'po',            label: 'PO Date'       },
+    { key: 'poNumber',      label: 'PO#'           },
+    { key: 'promiseDate',   label: 'Promise Date'  },
+    { key: 'arrivalDate',   label: 'Arrival Date'  },
+    { key: 'hslwhDate',     label: 'HSL WH Date'   },
+    { key: 'eqDate',        label: 'EQ Date'       },
+    { key: 'cocDate',       label: 'COC Date'      },
+    { key: 'trackingNumber',label: 'Tracking#'     },
+    { key: 'wd',            label: 'Working Days'  },
+    { key: 'notes',         label: 'Notes'         },
 ];
 
 async function logChange({ action, item, oldItem, user }) {
@@ -93,33 +93,6 @@ async function logChange({ action, item, oldItem, user }) {
         console.warn('Changelog write error:', e.message);
     }
 }
-
-// ── SSE broadcast ────────────────────────────────────────────────
-const sseClients = new Set();
-
-function broadcast(event, data) {
-    const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const client of sseClients) {
-        try { client.write(msg); }
-        catch (e) { sseClients.delete(client); }
-    }
-}
-
-app.get('/api/events', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-
-    const ping = setInterval(() => {
-        try { res.write(': ping\n\n'); }
-        catch (e) { clearInterval(ping); }
-    }, 25000);
-
-    sseClients.add(res);
-    req.on('close', () => { clearInterval(ping); sseClients.delete(res); });
-});
 
 // ── Items API ────────────────────────────────────────────────────
 app.get('/api/items', async (req, res) => {
@@ -160,8 +133,6 @@ app.post('/api/items', async (req, res) => {
         // Log change
         const action = existing ? 'updated' : 'created';
         await logChange({ action, item, oldItem: existing ? (({ _id, ...i }) => i)(existing) : null, user: item.lastModifiedBy });
-
-        broadcast('items-changed', { action, id: item.id, by: item.lastModifiedBy || '' });
     } catch (err) {
         console.error('POST /api/items error:', err);
         res.status(500).json({ error: err.message });
@@ -184,7 +155,6 @@ app.put('/api/items', async (req, res) => {
         res.json({ success: true, count: stamped.length });
 
         await logChange({ action: 'imported', item: { id: 'bulk', partNumber: `${stamped.length} items` }, user: items[0]?.lastModifiedBy || 'Unknown' });
-        broadcast('items-changed', { action: 'bulk', count: stamped.length });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -202,7 +172,6 @@ app.delete('/api/items', async (req, res) => {
         res.json({ success: true });
 
         await logChange({ action: 'deleted', item: existing ? (({ _id, ...i }) => i)(existing) : { id }, user: req.query.user || 'Unknown' });
-        broadcast('items-changed', { action: 'delete', id });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
