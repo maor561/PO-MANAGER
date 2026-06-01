@@ -1652,6 +1652,7 @@ const app = {
             'revision':    i => (i.revision    || '').toLowerCase(),
             'quantity':    i => parseFloat(i.quantity) || 0,
             'supplier':    i => (i.supplier    || '').toLowerCase(),
+            'project':     i => (i.project     || '').toLowerCase(),
             'hslwhDate':   i => i.hslwhDate || '',
         };
         const keyFn = colKey[sortCol] || colKey['hslwhDate'];
@@ -1674,6 +1675,7 @@ const app = {
                 <th class="recv-th" onclick="app.setRecvSort('revision')">Rev${arrow('revision')}</th>
                 <th class="recv-th" onclick="app.setRecvSort('quantity')">Qty${arrow('quantity')}</th>
                 <th class="recv-th" onclick="app.setRecvSort('supplier')">Supplier${arrow('supplier')}</th>
+                <th class="recv-th" onclick="app.setRecvSort('project')">Project${arrow('project')}</th>
                 <th class="recv-th" onclick="app.setRecvSort('hslwhDate')">HSL WH Date${arrow('hslwhDate')}</th>
             </tr>`;
         }
@@ -1706,6 +1708,7 @@ const app = {
             <td>${item.revision || '—'}</td>
             <td class="recv-qty">${item.quantity || '—'}</td>
             <td>${item.supplier || '—'}</td>
+            <td>${item.project || '—'}</td>
             <td class="recv-date">${this.formatDate(item.hslwhDate)}</td>
         </tr>`).join('');
     },
