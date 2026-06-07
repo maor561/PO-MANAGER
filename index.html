@@ -261,9 +261,19 @@
                     </div>
                 </div>
             </div>
-            <p class="chart-sub" style="margin-bottom:12px">Total spend per project (quantity × unit cost), converted to selected currency</p>
-            <div id="costProjectWrap" style="position:relative;height:240px">
-                <canvas id="costProjectChart"></canvas>
+            <div class="cost-dual-grid">
+                <div>
+                    <p class="chart-sub" style="margin-bottom:12px">Total Spend (qty × unit cost)</p>
+                    <div id="costProjectWrap" style="position:relative;height:220px">
+                        <canvas id="costProjectChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <p class="chart-sub" style="margin-bottom:12px">Order Lines (P/N count)</p>
+                    <div id="orderLinesWrap" style="position:relative;height:220px">
+                        <canvas id="orderLinesChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 

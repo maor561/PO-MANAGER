@@ -1049,6 +1049,12 @@ input[type="file"] { display: none; }
 .dash-rates-info span { white-space: nowrap; }
 .rates-date { font-style: italic; }
 
+/* Cost + Order Lines dual grid */
+.cost-dual-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+@media (max-width: 900px) { .cost-dual-grid { grid-template-columns: 1fr; } }
+
 /* Aging bands */
 .dash-aging-bands { display: flex; gap: 12px; flex-wrap: wrap; }
 .aging-band {

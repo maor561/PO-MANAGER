@@ -1798,6 +1798,7 @@ const app = {
         this.renderAtRiskTable(items);
         this.renderPrPoKpi(items);
         this.renderCostByProject(items);
+        this.renderOrderLines(items);
         this.renderAging(items);
     },
 
@@ -2063,6 +2064,47 @@ const app = {
                     x: { grid: { display: false }, ticks: { font: { size: 11 } } },
                     y: { beginAtZero: true, grid: { color: '#f1f5f9' },
                          ticks: { callback: v => curSym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+                }
+            }
+        });
+    },
+
+    /* ── Order Lines by Project ──────────────────────────── */
+    renderOrderLines(items) {
+        const ctx = document.getElementById('orderLinesChart');
+        if (!ctx) return;
+        if (this.dashboardCharts.orderLines) this.dashboardCharts.orderLines.destroy();
+
+        const counts = {};
+        items.forEach(i => {
+            if (!i.project) return;
+            counts[i.project] = (counts[i.project] || 0) + 1;
+        });
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        if (!sorted.length) return;
+
+        const COLORS = ['#2563eb','#0891b2','#16a34a','#d97706','#dc2626','#8b5cf6','#ec4899','#f59e0b'];
+        this.dashboardCharts.orderLines = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(e => e[0]),
+                datasets: [{
+                    data: sorted.map(e => e[1]),
+                    backgroundColor: sorted.map((_, i) => COLORS[i % COLORS.length] + 'cc'),
+                    borderColor:     sorted.map((_, i) => COLORS[i % COLORS.length]),
+                    borderWidth: 1.5,
+                    borderRadius: 6, barThickness: 28,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: c => c.raw + ' order lines' } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }
                 }
             }
         });
