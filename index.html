@@ -214,8 +214,18 @@
         <!-- Row: Cost by Project + Pipeline Funnel -->
         <div class="dash-charts-row">
             <div class="chart-box chart-box-wide">
-                <h4>💰 Cost by Project</h4>
-                <p class="chart-sub">Total spend (qty × unit cost) per project</p>
+                <div class="chart-header" style="align-items:flex-start;flex-direction:column;gap:6px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                        <h4 style="margin:0">💰 Cost by Project</h4>
+                        <div class="cur-toggle">
+                            <button class="cur-btn cur-btn-active" data-cur="ILS" onclick="app.setCurrency('ILS')">₪ ILS</button>
+                            <button class="cur-btn" data-cur="USD" onclick="app.setCurrency('USD')">$ USD</button>
+                            <button class="cur-btn" data-cur="EUR" onclick="app.setCurrency('EUR')">€ EUR</button>
+                        </div>
+                    </div>
+                    <div id="dashRatesInfo" class="dash-rates-info">Loading rates…</div>
+                </div>
+                <p class="chart-sub" style="margin-top:4px">Total spend (qty × unit cost) converted to selected currency</p>
                 <div id="costProjectWrap" style="position:relative;height:220px">
                     <canvas id="costProjectChart"></canvas>
                 </div>

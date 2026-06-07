@@ -1042,6 +1042,28 @@ input[type="file"] { display: none; }
 }
 .chart-box-wide { grid-column: span 1; }
 
+/* Currency toggle */
+.cur-toggle {
+    display: flex; gap: 2px; background: var(--gray-100);
+    border-radius: 8px; padding: 3px;
+}
+.cur-btn {
+    padding: 3px 10px; font-size: 12px; font-weight: 600;
+    border: none; border-radius: 6px; cursor: pointer;
+    background: transparent; color: var(--gray-500);
+    transition: all .15s;
+}
+.cur-btn:hover { background: white; color: var(--gray-700); }
+.cur-btn-active { background: white !important; color: var(--primary) !important; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+/* Rates info strip */
+.dash-rates-info {
+    display: flex; gap: 14px; font-size: 11px; color: var(--gray-500);
+    flex-wrap: wrap;
+}
+.dash-rates-info span { display: flex; align-items: center; gap: 3px; }
+.rates-date { color: var(--gray-400); font-style: italic; }
+
 /* Pipeline mini chips in KPI bar */
 .dash-pipeline-mini {
     display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;

@@ -43,6 +43,8 @@ const app = {
     currentUser: '',
     changelogUnlocked: false,
     _changelogCache: null,
+    dashCurrency: 'ILS',
+    exchangeRates: null,   // { USD: 0.273, EUR: 0.251 } — rates FROM ILS
 
     /* ── Init ─────────────────────────────────────────────── */
     async init() {
@@ -1739,6 +1741,8 @@ const app = {
     },
 
     renderDashboard() {
+        // Fetch exchange rates once per session
+        if (!this.exchangeRates) this.fetchExchangeRates();
         const items = this.getDashItems();
         const total    = items.length;
         const completed = items.filter(i => i.hslwhDate).length;
@@ -1948,16 +1952,74 @@ const app = {
         el.style.color = avg <= 7 ? 'var(--success)' : avg <= 14 ? 'var(--warning)' : 'var(--danger)';
     },
 
+    /* ── Exchange rates ──────────────────────────────────── */
+    async fetchExchangeRates() {
+        try {
+            const res = await fetch('https://api.frankfurter.app/latest?from=ILS&to=USD,EUR');
+            if (!res.ok) throw new Error('rate fetch failed');
+            const data = await res.json();
+            this.exchangeRates = { ...data.rates, ILS: 1, _date: data.date };
+        } catch (e) {
+            // Fallback rates if API is unavailable
+            this.exchangeRates = { ILS: 1, USD: 0.273, EUR: 0.251, _date: 'offline' };
+            console.warn('Exchange rate fetch failed, using fallback rates');
+        }
+        this._updateRatesDisplay();
+    },
+
+    // Convert amount from sourceCurrency to this.dashCurrency
+    convertCurrency(amount, fromCurrency) {
+        if (!this.exchangeRates) return amount;
+        const from = fromCurrency || 'ILS';
+        const to   = this.dashCurrency;
+        if (from === to) return amount;
+        // Convert: amount → ILS → target
+        const toIls   = from === 'ILS' ? 1 : 1 / (this.exchangeRates[from] || 1);
+        const fromIls = to   === 'ILS' ? 1 : (this.exchangeRates[to]   || 1);
+        return amount * toIls * fromIls;
+    },
+
+    setCurrency(cur) {
+        this.dashCurrency = cur;
+        document.querySelectorAll('.cur-btn').forEach(b =>
+            b.classList.toggle('cur-btn-active', b.dataset.cur === cur));
+        this._updateRatesDisplay();
+        this.renderCostByProject(this.getDashItems());
+    },
+
+    _updateRatesDisplay() {
+        const el = document.getElementById('dashRatesInfo');
+        if (!el || !this.exchangeRates) return;
+        const r   = this.exchangeRates;
+        const date = r._date === 'offline' ? '⚠️ offline rates' : `ECB · ${r._date}`;
+        // Show 1 unit of each foreign currency in selected display currency
+        const fmt = (from, to) => {
+            const sym = { ILS: '₪', USD: '$', EUR: '€' };
+            const val = this.convertCurrency(1, from);
+            return `1 ${sym[from]} = ${sym[to]}${val.toFixed(3)}`;
+        };
+        const cur = this.dashCurrency;
+        const others = ['ILS','USD','EUR'].filter(c => c !== cur);
+        el.innerHTML =
+            `<span>${fmt(others[0], cur)}</span>` +
+            `<span>${fmt(others[1], cur)}</span>` +
+            `<span class="rates-date">${date}</span>`;
+    },
+
     /* ── 2. Cost by Project ──────────────────────────────── */
     renderCostByProject(items) {
         const ctx  = document.getElementById('costProjectChart');
         if (!ctx) return;
         if (this.dashboardCharts.costProject) this.dashboardCharts.costProject.destroy();
 
+        const sym = { ILS: '₪', USD: '$', EUR: '€' };
+        const curSym = sym[this.dashCurrency] || '₪';
+
         const totals = {};
         items.forEach(i => {
             if (!i.project) return;
-            const spend = (parseFloat(i.cost) || 0) * (parseFloat(i.quantity) || 1);
+            const raw    = (parseFloat(i.cost) || 0) * (parseFloat(i.quantity) || 1);
+            const spend  = this.exchangeRates ? this.convertCurrency(raw, i.currency || 'ILS') : raw;
             totals[i.project] = (totals[i.project] || 0) + spend;
         });
         const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
@@ -1978,12 +2040,12 @@ const app = {
                 responsive: true, maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: c => '₪ ' + c.raw.toLocaleString() } }
+                    tooltip: { callbacks: { label: c => curSym + ' ' + c.raw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } }
                 },
                 scales: {
                     x: { grid: { display: false }, ticks: { font: { size: 11 } } },
                     y: { beginAtZero: true, grid: { color: '#f1f5f9' },
-                         ticks: { callback: v => '₪' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+                         ticks: { callback: v => curSym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
                 }
             }
         });
