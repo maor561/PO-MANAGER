@@ -2100,15 +2100,15 @@ const app = {
             }).join('');
         }
 
-        // Detailed table — sorted by waiting days desc
+        // Detailed table — only orange & red (31+ days), sorted by waiting days desc
         const rows = open.map(i => {
             const days = this.calculateDaysBetween(i.po, today.toISOString().slice(0,10)) || 0;
             const band = bands.find(b => days >= b.min && days <= b.max) || bands[3];
             return { item: i, days, band };
-        }).sort((a, b) => b.days - a.days);
+        }).filter(r => r.days >= 31).sort((a, b) => b.days - a.days);
 
         if (!rows.length) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px">✅ No open orders</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px">✅ No orders over 30 days</td></tr>`;
             return;
         }
 
