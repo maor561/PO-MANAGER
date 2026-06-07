@@ -2153,13 +2153,14 @@ const app = {
         }).filter(r => r.days >= 31).sort((a, b) => b.days - a.days);
 
         if (!rows.length) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px">✅ No orders over 30 days</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:20px">✅ No orders over 30 days</td></tr>`;
             return;
         }
 
         tbody.innerHTML = rows.map(({ item, days, band }) => `<tr>
             <td>${item.serialNumber || '—'}</td>
             <td><strong>${item.partNumber || '—'}</strong></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(item.description||'').replace(/"/g,'&quot;')}">${item.description || '—'}</td>
             <td>${item.project  || '—'}</td>
             <td>${item.supplier || '—'}</td>
             <td>${this.formatDate(item.po)}</td>
