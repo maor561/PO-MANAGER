@@ -193,7 +193,7 @@
             </div>
         </div>
 
-        <!-- New KPI row: PR→PO avg + Pipeline summary -->
+        <!-- New KPI row: PR→PO avg -->
         <div class="dash-kpi-row" style="margin-top:0">
             <div class="dash-kpi-card">
                 <div class="dash-kpi-icon" style="background:#f5f3ff">⏱️</div>
@@ -202,16 +202,9 @@
                     <div class="dash-kpi-value info" id="dashAvgPrPo">—</div>
                 </div>
             </div>
-            <div class="dash-kpi-card" style="cursor:default">
-                <div class="dash-kpi-icon" style="background:#f0fdf4">🔄</div>
-                <div style="flex:1">
-                    <div class="dash-kpi-label">Pipeline</div>
-                    <div id="dashPipelineKpi" class="dash-pipeline-mini"></div>
-                </div>
-            </div>
         </div>
 
-        <!-- Row: Cost by Project + Pipeline Funnel -->
+        <!-- Row: Cost by Project -->
         <div class="dash-charts-row">
             <div class="chart-box chart-box-wide">
                 <div class="chart-header" style="align-items:flex-start;flex-direction:column;gap:6px">
@@ -228,13 +221,6 @@
                 <p class="chart-sub" style="margin-top:4px">Total spend (qty × unit cost) converted to selected currency</p>
                 <div id="costProjectWrap" style="position:relative;height:220px">
                     <canvas id="costProjectChart"></canvas>
-                </div>
-            </div>
-            <div class="chart-box">
-                <h4>🔄 Supply Chain Pipeline</h4>
-                <p class="chart-sub">Items currently at each stage</p>
-                <div id="pipelineWrap" style="position:relative;height:220px">
-                    <canvas id="pipelineChart"></canvas>
                 </div>
             </div>
         </div>

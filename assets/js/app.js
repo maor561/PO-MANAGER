@@ -1780,7 +1780,6 @@ const app = {
         this.renderAtRiskTable(items);
         this.renderPrPoKpi(items);
         this.renderCostByProject(items);
-        this.renderPipeline(items);
         this.renderAging(items);
     },
 
@@ -2051,57 +2050,7 @@ const app = {
         });
     },
 
-    /* ── 3. Pipeline Funnel ──────────────────────────────── */
-    renderPipeline(items) {
-        const ctx  = document.getElementById('pipelineChart');
-        const mini = document.getElementById('dashPipelineKpi');
-        if (!ctx) return;
-        if (this.dashboardCharts.pipeline) this.dashboardCharts.pipeline.destroy();
-
-        const stages = [
-            { label: 'Pending PO',   color: '#94a3b8', test: i => !i.po },
-            { label: 'Ordered',       color: '#2563eb', test: i => i.po && !i.arrivalDate && !i.hslwhDate },
-            { label: 'In Transit',    color: '#0891b2', test: i => i.arrivalDate && !i.hslwhDate && !this.isArrivalDelayed(i) },
-            { label: 'Overdue',       color: '#dc2626', test: i => this.isArrivalDelayed(i) && !i.hslwhDate },
-            { label: 'In Warehouse',  color: '#16a34a', test: i => !!i.hslwhDate },
-        ];
-
-        const openItems = items.filter(i => !i.hslwhDate || i.hslwhDate);
-        const counts = stages.map(s => items.filter(s.test).length);
-
-        // Mini pipeline in KPI bar
-        if (mini) {
-            mini.innerHTML = stages.map((s, idx) =>
-                `<span class="pipeline-chip" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}44">
-                    ${s.label}: <strong>${counts[idx]}</strong>
-                </span>`
-            ).join('');
-        }
-
-        this.dashboardCharts.pipeline = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: stages.map(s => s.label),
-                datasets: [{
-                    data: counts,
-                    backgroundColor: stages.map(s => s.color),
-                    borderRadius: 6, barThickness: 32,
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false },
-                    tooltip: { callbacks: { label: c => c.raw + ' items' } }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }
-                }
-            }
-        });
-    },
-
-    /* ── 4. Aging Report ─────────────────────────────────── */
+    /* ── 3. Aging Report ─────────────────────────────────── */
     renderAging(items) {
         const bandsEl = document.getElementById('dashAgingBands');
         const tbody   = document.getElementById('dashAgingBody');
