@@ -1955,7 +1955,7 @@ const app = {
     /* ── Exchange rates ──────────────────────────────────── */
     async fetchExchangeRates() {
         try {
-            const res = await fetch('https://api.frankfurter.app/latest?from=ILS&to=USD,EUR');
+            const res = await fetch('/api/rates');
             if (!res.ok) throw new Error('rate fetch failed');
             const data = await res.json();
             this.exchangeRates = { ...data.rates, ILS: 1, _date: data.date };

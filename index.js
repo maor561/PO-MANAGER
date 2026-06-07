@@ -189,6 +189,19 @@ app.get('/api/changelog', async (req, res) => {
     }
 });
 
+// ── Exchange Rates proxy ─────────────────────────────────────────
+app.get('/api/rates', async (req, res) => {
+    try {
+        const response = await fetch('https://api.frankfurter.app/latest?from=ILS&to=USD,EUR');
+        if (!response.ok) throw new Error('upstream error');
+        const data = await response.json();
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // cache 1h
+        res.json(data);
+    } catch (err) {
+        res.status(502).json({ error: err.message });
+    }
+});
+
 // SPA fallback
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
