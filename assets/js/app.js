@@ -1798,7 +1798,6 @@ const app = {
         this.renderAtRiskTable(items);
         this.renderPrPoKpi(items);
         this.renderCostByProject(items);
-        this.renderOrderLines(items);
         this.renderAging(items);
     },
 
@@ -2024,87 +2023,91 @@ const app = {
             `<span class="rates-date">${date}</span>`;
     },
 
-    /* ── 2. Cost by Project ──────────────────────────────── */
+    /* ── 2. Cost by Project + Order Lines (dual-axis) ───── */
     renderCostByProject(items) {
-        const ctx  = document.getElementById('costProjectChart');
+        const ctx = document.getElementById('costProjectChart');
         if (!ctx) return;
         if (this.dashboardCharts.costProject) this.dashboardCharts.costProject.destroy();
 
-        const sym = { ILS: '₪', USD: '$', EUR: '€' };
+        const sym    = { ILS: '₪', USD: '$', EUR: '€' };
         const curSym = sym[this.dashCurrency] || '₪';
 
-        const totals = {};
+        // Collect both metrics per project
+        const data = {};
         items.forEach(i => {
             if (!i.project) return;
-            const raw    = (parseFloat(i.cost) || 0) * (parseFloat(i.quantity) || 1);
-            const spend  = this.exchangeRates ? this.convertCurrency(raw, i.currency || 'ILS') : raw;
-            totals[i.project] = (totals[i.project] || 0) + spend;
+            if (!data[i.project]) data[i.project] = { cost: 0, lines: 0 };
+            const raw   = (parseFloat(i.cost) || 0) * (parseFloat(i.quantity) || 1);
+            data[i.project].cost  += this.exchangeRates ? this.convertCurrency(raw, i.currency || 'ILS') : raw;
+            data[i.project].lines += 1;
         });
-        const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+
+        // Sort by cost descending — same order for both metrics
+        const sorted = Object.entries(data).sort((a, b) => b[1].cost - a[1].cost);
         if (!sorted.length) return;
 
-        const COLORS = ['#2563eb','#0891b2','#16a34a','#d97706','#dc2626','#8b5cf6','#ec4899','#f59e0b'];
+        const labels = sorted.map(e => e[0]);
+        const costs  = sorted.map(e => +e[1].cost.toFixed(2));
+        const lines  = sorted.map(e => e[1].lines);
+
         this.dashboardCharts.costProject = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: sorted.map(e => e[0]),
-                datasets: [{
-                    data: sorted.map(e => +e[1].toFixed(2)),
-                    backgroundColor: sorted.map((_, i) => COLORS[i % COLORS.length]),
-                    borderRadius: 6, barThickness: 28,
-                }]
+                labels,
+                datasets: [
+                    {
+                        label: 'Total Spend',
+                        data: costs,
+                        backgroundColor: '#2563eb',
+                        borderRadius: 6, barThickness: 22,
+                        yAxisID: 'yCost',
+                        order: 2,
+                    },
+                    {
+                        label: 'Order Lines',
+                        data: lines,
+                        type: 'line',
+                        borderColor: '#d97706',
+                        backgroundColor: '#d9770622',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#d97706',
+                        pointRadius: 5, pointHoverRadius: 7,
+                        tension: 0.3, fill: false,
+                        yAxisID: 'yLines',
+                        order: 1,
+                    }
+                ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: c => curSym + ' ' + c.raw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } }
+                    legend: {
+                        display: true, position: 'top',
+                        labels: { font: { size: 11 }, usePointStyle: true, boxWidth: 8 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: c => c.dataset.label === 'Total Spend'
+                                ? `${c.dataset.label}: ${curSym}${c.raw.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                                : `${c.dataset.label}: ${c.raw}`
+                        }
+                    }
                 },
                 scales: {
                     x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' },
-                         ticks: { callback: v => curSym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
-                }
-            }
-        });
-    },
-
-    /* ── Order Lines by Project ──────────────────────────── */
-    renderOrderLines(items) {
-        const ctx = document.getElementById('orderLinesChart');
-        if (!ctx) return;
-        if (this.dashboardCharts.orderLines) this.dashboardCharts.orderLines.destroy();
-
-        const counts = {};
-        items.forEach(i => {
-            if (!i.project) return;
-            counts[i.project] = (counts[i.project] || 0) + 1;
-        });
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        if (!sorted.length) return;
-
-        const COLORS = ['#2563eb','#0891b2','#16a34a','#d97706','#dc2626','#8b5cf6','#ec4899','#f59e0b'];
-        this.dashboardCharts.orderLines = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: sorted.map(e => e[0]),
-                datasets: [{
-                    data: sorted.map(e => e[1]),
-                    backgroundColor: sorted.map((_, i) => COLORS[i % COLORS.length] + 'cc'),
-                    borderColor:     sorted.map((_, i) => COLORS[i % COLORS.length]),
-                    borderWidth: 1.5,
-                    borderRadius: 6, barThickness: 28,
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: c => c.raw + ' order lines' } }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }
+                    yCost: {
+                        position: 'left', beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: v => curSym + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v), font: { size: 10 } },
+                        title: { display: true, text: `Spend (${curSym})`, font: { size: 10 }, color: '#2563eb' }
+                    },
+                    yLines: {
+                        position: 'right', beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        ticks: { stepSize: 1, font: { size: 10 } },
+                        title: { display: true, text: 'Order Lines', font: { size: 10 }, color: '#d97706' }
+                    }
                 }
             }
         });
