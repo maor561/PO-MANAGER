@@ -1437,6 +1437,12 @@ const app = {
         this.renderDashboard();
     },
 
+    printDashboard() {
+        document.body.classList.add('print-dashboard');
+        window.print();
+        document.body.classList.remove('print-dashboard');
+    },
+
     /* ── Change Log ──────────────────────────────────────── */
     _initChangelogView() {
         // Check sessionStorage for unlock state
@@ -1766,6 +1772,18 @@ const app = {
         const supplierCount = {};
         items.forEach(i => { if (i.supplier) supplierCount[i.supplier] = (supplierCount[i.supplier] || 0) + 1; });
         const topSupplier = Object.entries(supplierCount).sort((a, b) => b[1] - a[1])[0];
+
+        // Date range label in header
+        const from = document.getElementById('dashFromDate')?.value;
+        const to   = document.getElementById('dashToDate')?.value;
+        const rangeEl = document.getElementById('dashDateRangeLabel');
+        if (rangeEl) {
+            if (from || to) {
+                rangeEl.textContent = `${from ? this.formatDate(from) : '…'} – ${to ? this.formatDate(to) : '…'}`;
+            } else {
+                rangeEl.textContent = 'All time';
+            }
+        }
 
         // Update KPI cards
         document.getElementById('dashTotalOrders').textContent = total;
