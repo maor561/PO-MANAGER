@@ -193,6 +193,57 @@
             </div>
         </div>
 
+        <!-- New KPI row: PR→PO avg + Pipeline summary -->
+        <div class="dash-kpi-row" style="margin-top:0">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon" style="background:#f5f3ff">⏱️</div>
+                <div>
+                    <div class="dash-kpi-label">Avg PR → PO (days)</div>
+                    <div class="dash-kpi-value info" id="dashAvgPrPo">—</div>
+                </div>
+            </div>
+            <div class="dash-kpi-card" style="cursor:default">
+                <div class="dash-kpi-icon" style="background:#f0fdf4">🔄</div>
+                <div style="flex:1">
+                    <div class="dash-kpi-label">Pipeline</div>
+                    <div id="dashPipelineKpi" class="dash-pipeline-mini"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row: Cost by Project + Pipeline Funnel -->
+        <div class="dash-charts-row">
+            <div class="chart-box chart-box-wide">
+                <h4>💰 Cost by Project</h4>
+                <p class="chart-sub">Total spend (qty × unit cost) per project</p>
+                <div id="costProjectWrap" style="position:relative;height:220px">
+                    <canvas id="costProjectChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-box">
+                <h4>🔄 Supply Chain Pipeline</h4>
+                <p class="chart-sub">Items currently at each stage</p>
+                <div id="pipelineWrap" style="position:relative;height:220px">
+                    <canvas id="pipelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aging Report -->
+        <div class="dash-atrisk-section">
+            <h4>📅 Open Orders Aging</h4>
+            <p class="chart-sub" style="margin:0 0 12px">Items not yet received, grouped by how long they've been waiting</p>
+            <div class="dash-aging-bands" id="dashAgingBands"></div>
+            <table class="dash-atrisk-table" id="dashAgingTable" style="margin-top:16px">
+                <thead>
+                    <tr>
+                        <th>#</th><th>P/N</th><th>Project</th><th>Supplier</th><th>PO Date</th><th>Waiting (days)</th><th>Band</th>
+                    </tr>
+                </thead>
+                <tbody id="dashAgingBody"></tbody>
+            </table>
+        </div>
+
         <!-- At-Risk Table -->
         <div class="dash-atrisk-section">
             <h4>⚠️ At-Risk Orders</h4>

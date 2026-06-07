@@ -1774,6 +1774,10 @@ const app = {
         this.renderOnTimePie(onTimeCount, completed - onTimeCount);
         this.renderTimelineChart(items);
         this.renderAtRiskTable(items);
+        this.renderPrPoKpi(items);
+        this.renderCostByProject(items);
+        this.renderPipeline(items);
+        this.renderAging(items);
     },
 
     renderSupplierChart(items) {
@@ -1931,6 +1935,163 @@ const app = {
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
+    },
+
+    /* ── 1. PR → PO Average ─────────────────────────────── */
+    renderPrPoKpi(items) {
+        const el = document.getElementById('dashAvgPrPo');
+        if (!el) return;
+        const withBoth = items.filter(i => i.pd && i.po);
+        if (!withBoth.length) { el.textContent = '—'; return; }
+        const avg = withBoth.reduce((s, i) => s + (this.calculateDaysBetween(i.pd, i.po) || 0), 0) / withBoth.length;
+        el.textContent = avg.toFixed(1) + 'd';
+        el.style.color = avg <= 7 ? 'var(--success)' : avg <= 14 ? 'var(--warning)' : 'var(--danger)';
+    },
+
+    /* ── 2. Cost by Project ──────────────────────────────── */
+    renderCostByProject(items) {
+        const ctx  = document.getElementById('costProjectChart');
+        if (!ctx) return;
+        if (this.dashboardCharts.costProject) this.dashboardCharts.costProject.destroy();
+
+        const totals = {};
+        items.forEach(i => {
+            if (!i.project) return;
+            const spend = (parseFloat(i.cost) || 0) * (parseFloat(i.quantity) || 1);
+            totals[i.project] = (totals[i.project] || 0) + spend;
+        });
+        const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+        if (!sorted.length) return;
+
+        const COLORS = ['#2563eb','#0891b2','#16a34a','#d97706','#dc2626','#8b5cf6','#ec4899','#f59e0b'];
+        this.dashboardCharts.costProject = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(e => e[0]),
+                datasets: [{
+                    data: sorted.map(e => +e[1].toFixed(2)),
+                    backgroundColor: sorted.map((_, i) => COLORS[i % COLORS.length]),
+                    borderRadius: 6, barThickness: 28,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: c => '₪ ' + c.raw.toLocaleString() } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' },
+                         ticks: { callback: v => '₪' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+                }
+            }
+        });
+    },
+
+    /* ── 3. Pipeline Funnel ──────────────────────────────── */
+    renderPipeline(items) {
+        const ctx  = document.getElementById('pipelineChart');
+        const mini = document.getElementById('dashPipelineKpi');
+        if (!ctx) return;
+        if (this.dashboardCharts.pipeline) this.dashboardCharts.pipeline.destroy();
+
+        const stages = [
+            { label: 'Pending PO',   color: '#94a3b8', test: i => !i.po },
+            { label: 'Ordered',       color: '#2563eb', test: i => i.po && !i.arrivalDate && !i.hslwhDate },
+            { label: 'In Transit',    color: '#0891b2', test: i => i.arrivalDate && !i.hslwhDate && !this.isArrivalDelayed(i) },
+            { label: 'Overdue',       color: '#dc2626', test: i => this.isArrivalDelayed(i) && !i.hslwhDate },
+            { label: 'In Warehouse',  color: '#16a34a', test: i => !!i.hslwhDate },
+        ];
+
+        const openItems = items.filter(i => !i.hslwhDate || i.hslwhDate);
+        const counts = stages.map(s => items.filter(s.test).length);
+
+        // Mini pipeline in KPI bar
+        if (mini) {
+            mini.innerHTML = stages.map((s, idx) =>
+                `<span class="pipeline-chip" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}44">
+                    ${s.label}: <strong>${counts[idx]}</strong>
+                </span>`
+            ).join('');
+        }
+
+        this.dashboardCharts.pipeline = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: stages.map(s => s.label),
+                datasets: [{
+                    data: counts,
+                    backgroundColor: stages.map(s => s.color),
+                    borderRadius: 6, barThickness: 32,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: c => c.raw + ' items' } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }
+                }
+            }
+        });
+    },
+
+    /* ── 4. Aging Report ─────────────────────────────────── */
+    renderAging(items) {
+        const bandsEl = document.getElementById('dashAgingBands');
+        const tbody   = document.getElementById('dashAgingBody');
+        if (!tbody) return;
+
+        const today = new Date(); today.setHours(0,0,0,0);
+
+        // Open = has PO date, not yet in warehouse
+        const open = items.filter(i => i.po && !i.hslwhDate);
+
+        const bands = [
+            { label: '0 – 30 days',  min: 0,  max: 30,  color: '#16a34a', bg: '#f0fdf4' },
+            { label: '31 – 60 days', min: 31, max: 60,  color: '#d97706', bg: '#fffbeb' },
+            { label: '61 – 90 days', min: 61, max: 90,  color: '#ea580c', bg: '#fff7ed' },
+            { label: '90+ days',     min: 91, max: 9999, color: '#dc2626', bg: '#fef2f2' },
+        ];
+
+        // Band summary chips
+        if (bandsEl) {
+            bandsEl.innerHTML = bands.map(b => {
+                const cnt = open.filter(i => {
+                    const d = this.calculateDaysBetween(i.po, today.toISOString().slice(0,10));
+                    return d !== null && d >= b.min && d <= b.max;
+                }).length;
+                return `<div class="aging-band" style="background:${b.bg};border-color:${b.color}">
+                    <span class="aging-band-label" style="color:${b.color}">${b.label}</span>
+                    <span class="aging-band-count" style="color:${b.color}">${cnt}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // Detailed table — sorted by waiting days desc
+        const rows = open.map(i => {
+            const days = this.calculateDaysBetween(i.po, today.toISOString().slice(0,10)) || 0;
+            const band = bands.find(b => days >= b.min && days <= b.max) || bands[3];
+            return { item: i, days, band };
+        }).sort((a, b) => b.days - a.days);
+
+        if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px">✅ No open orders</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rows.map(({ item, days, band }) => `<tr>
+            <td>${item.serialNumber || '—'}</td>
+            <td><strong>${item.partNumber || '—'}</strong></td>
+            <td>${item.project  || '—'}</td>
+            <td>${item.supplier || '—'}</td>
+            <td>${this.formatDate(item.po)}</td>
+            <td><strong>${days}</strong></td>
+            <td><span class="aging-badge" style="background:${band.bg};color:${band.color};border:1px solid ${band.color}44">${band.label}</span></td>
+        </tr>`).join('');
     },
 
     renderAtRiskTable(items) {

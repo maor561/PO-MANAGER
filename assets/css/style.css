@@ -1042,6 +1042,29 @@ input[type="file"] { display: none; }
 }
 .chart-box-wide { grid-column: span 1; }
 
+/* Pipeline mini chips in KPI bar */
+.dash-pipeline-mini {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
+}
+.pipeline-chip {
+    font-size: 11px; padding: 2px 7px; border-radius: 10px; white-space: nowrap;
+}
+
+/* Aging bands summary */
+.dash-aging-bands {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.aging-band {
+    flex: 1; min-width: 120px; border: 1px solid; border-radius: 10px;
+    padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
+}
+.aging-band-label { font-size: 12px; font-weight: 600; }
+.aging-band-count { font-size: 22px; font-weight: 800; }
+.aging-badge {
+    display: inline-block; padding: 2px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+}
+
 /* At-Risk Table */
 .dash-atrisk-section {
     background: white; padding: 20px; border-radius: 10px;
