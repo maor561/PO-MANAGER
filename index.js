@@ -200,12 +200,13 @@ app.get('/api/rates', (req, res) => {
         upstream.on('end', () => {
             try {
                 const data = JSON.parse(raw);
-                if (data.result !== 'success') throw new Error('bad response');
-                // Normalize to same shape the client expects
+                if (data.result !== 'success' || !data.rates) throw new Error('bad response');
+                // Normalize to same shape the client expects.
+                // Free /v6/latest endpoint returns `rates` (not `conversion_rates`).
                 const out = {
                     base: 'ILS',
-                    date: data.time_last_update_utc?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-                    rates: { USD: data.conversion_rates.USD, EUR: data.conversion_rates.EUR }
+                    date: (data.time_last_update_utc || '').slice(0, 16) || new Date().toISOString().slice(0, 10),
+                    rates: { USD: data.rates.USD, EUR: data.rates.EUR }
                 };
                 res.setHeader('Cache-Control', 'public, max-age=3600');
                 res.json(out);
