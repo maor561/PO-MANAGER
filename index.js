@@ -192,16 +192,25 @@ app.get('/api/changelog', async (req, res) => {
 // ── Exchange Rates proxy ─────────────────────────────────────────
 app.get('/api/rates', (req, res) => {
     const https = require('https');
-    https.get('https://api.frankfurter.app/latest?from=ILS&to=USD,EUR', (upstream) => {
+    // open.er-api.com — free, no key, works from serverless
+    const url = 'https://open.er-api.com/v6/latest/ILS';
+    https.get(url, (upstream) => {
         let raw = '';
         upstream.on('data', chunk => raw += chunk);
         upstream.on('end', () => {
             try {
                 const data = JSON.parse(raw);
+                if (data.result !== 'success') throw new Error('bad response');
+                // Normalize to same shape the client expects
+                const out = {
+                    base: 'ILS',
+                    date: data.time_last_update_utc?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+                    rates: { USD: data.conversion_rates.USD, EUR: data.conversion_rates.EUR }
+                };
                 res.setHeader('Cache-Control', 'public, max-age=3600');
-                res.json(data);
+                res.json(out);
             } catch (e) {
-                res.status(502).json({ error: 'parse error' });
+                res.status(502).json({ error: e.message });
             }
         });
     }).on('error', err => {
