@@ -1724,6 +1724,26 @@ input[type="file"] { display: none; }
     .stage-checkbox { width: 18px; height: 18px; }
 }
 
+/* ─── "Late" tag (received after Promise Date) ───────────────── */
+.badge-late {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    margin-left: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 999px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
 /* ─── Stage quick-edit picker (card / mobile view) ───────────── */
 .stage-pill-tap, .dstage-tap {
     cursor: pointer;

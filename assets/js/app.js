@@ -754,6 +754,7 @@ const app = {
 
             const sym     = CURRENCY[item.currency || 'ILS'] || '₪';
             const costStr = item.cost ? `${sym}${Number(item.cost).toLocaleString()}` : '—';
+            const lateTag = this.isReceivedLate(item) ? '<span class="badge-late" title="Received after Promise Date">Late</span>' : '';
 
             // Stage pipeline
             const pipeline = this.stages.map(stage => {
@@ -808,6 +809,7 @@ const app = {
         <div class="dcard-header-right">
             ${poNum}
             <span class="badge ${stClass}">${stLabel}</span>
+            ${lateTag}
             <button class="dcard-icon-btn dcard-icon-btn-edit" title="Edit" onclick="event.stopPropagation();app.openEditModal('${item.id}')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
@@ -854,6 +856,7 @@ const app = {
             const cardCls = done ? 'card-completed' : delayed ? 'card-delayed' : soon ? 'card-soon' : '';
             const stCls   = done ? 'badge-success'  : delayed ? 'badge-danger'  : soon ? 'badge-warning' : 'badge-info';
             const stTxt   = done ? 'Completed'       : delayed ? 'Delayed'       : soon ? 'Due Soon'      : 'In Progress';
+            const lateTag = this.isReceivedLate(item) ? '<span class="badge-late" title="Received after Promise Date">Late</span>' : '';
 
             const stagePills = this.stages.map(stage => {
                 const isDone = stage.completedKey ? !!item[stage.completedKey] : !!item[stage.key];
@@ -880,6 +883,7 @@ const app = {
     <span class="card-num">${idx+1}</span>
     <span class="card-pn">${item.partNumber || '—'}</span>
     <span class="card-badge ${stCls}">${stTxt}</span>
+    ${lateTag}
     <button class="card-edit-btn" onclick="app.openEditModal('${item.id}')">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit
@@ -928,19 +932,30 @@ const app = {
         return history;
     },
 
+    // Delayed = OPEN order whose Promise Date has already passed (still stuck / actionable now)
     isArrivalDelayed(item) {
-        if (!item.arrivalDate || item.hslwhDate) return false;
+        if (!item.promiseDate || item.hslwhDate) return false;
         const today = new Date(); today.setHours(0,0,0,0);
-        const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
-        return today > arrival;
+        const promise = new Date(item.promiseDate); promise.setHours(0,0,0,0);
+        return today > promise;
     },
 
+    // Due Soon = OPEN order whose Promise Date falls within the next `days`
     isArrivingSoon(item, days = 7) {
-        if (!item.arrivalDate || item.hslwhDate) return false;
+        if (!item.promiseDate || item.hslwhDate) return false;
         const today = new Date(); today.setHours(0,0,0,0);
-        const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
-        const diff = (arrival - today) / 86400000;
+        const promise = new Date(item.promiseDate); promise.setHours(0,0,0,0);
+        const diff = (promise - today) / 86400000;
         return diff >= 0 && diff <= days;
+    },
+
+    // Received Late = item was received (HSL WH) AFTER its Promise Date.
+    // Stays "Completed" (green) but earns a "Late" tag and counts against On-Time%.
+    isReceivedLate(item) {
+        if (!item.hslwhDate || !item.promiseDate) return false;
+        const arrived = new Date(item.hslwhDate); arrived.setHours(0,0,0,0);
+        const promise = new Date(item.promiseDate); promise.setHours(0,0,0,0);
+        return arrived > promise;
     },
 
     /* ── Filtering ────────────────────────────────────────── */
@@ -1254,6 +1269,7 @@ const app = {
                     if (stage.id === 'hslwh') {
                         const d = this.calculateDaysBetween(item.po, dateVal);
                         if (d !== null) badge = `<span class="days-badge">${d}d from PO</span>`;
+                        if (this.isReceivedLate(item)) badge += '<span class="badge-late" title="Received after Promise Date">Late</span>';
                     }
                     const completedClass = isCompleted ? 'stage-cell stage-done' : 'stage-cell';
                     html += `<td>
@@ -1806,11 +1822,11 @@ const app = {
         const completed = items.filter(i => i.hslwhDate).length;
         const atRisk   = items.filter(i => this.isArrivalDelayed(i)).length;
 
-        // On-Time: completed and NOT delayed at arrival
+        // On-Time: received (HSL WH) on or before the Promise Date
         const onTimeCount = items.filter(i => {
             if (!i.hslwhDate) return false;
-            if (!i.arrivalDate) return true;
-            return new Date(i.hslwhDate) <= new Date(i.arrivalDate);
+            if (!i.promiseDate) return true;
+            return new Date(i.hslwhDate) <= new Date(i.promiseDate);
         }).length;
         const onTimePct = completed > 0 ? Math.round((onTimeCount / completed) * 100) : 0;
 
