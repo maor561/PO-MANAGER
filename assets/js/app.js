@@ -26,7 +26,7 @@ const app = {
     items: [],
     fields: [],
     stages: [],
-    hideCompleted: false,
+    hideCompleted: true,   // default: hide completed items on load
     useApi: false,
     currentSort: { col: null, dir: 'asc', isStage: false },
     editingItemId: null,
@@ -59,6 +59,15 @@ const app = {
         // SSE removed — polling handles real-time sync (see startAutoRefresh)
         this.startAutoRefresh();    // fallback polling (30s)
         document.getElementById('compactBtn')?.classList.toggle('vm-active', this.compactMode);
+        this._syncHideCompletedBtn();
+    },
+
+    _syncHideCompletedBtn() {
+        const btn = document.getElementById('toggleCompletedBtn');
+        if (!btn) return;
+        const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        btn.classList.toggle('active', this.hideCompleted);
+        btn.innerHTML = `${eyeIcon} ${this.hideCompleted ? 'Show Completed' : 'Hide Completed'}`;
     },
 
     /* ── User identity ────────────────────────────────────── */
@@ -125,6 +134,8 @@ const app = {
         this.stages = JSON.parse(JSON.stringify(DEFAULT_STAGES));
         this.viewMode     = localStorage.getItem('po_viewMode')  || 'table';
         this.compactMode  = localStorage.getItem('po_compact')   === '1';
+        // Hide completed items by default on load (unless user opted out)
+        this.hideCompleted = localStorage.getItem('po_hideCompleted') !== '0';
         this.hiddenColumns = new Set(JSON.parse(localStorage.getItem('po_hiddenCols') || '[]'));
         if (this.compactMode) document.querySelector('.app-shell')?.classList.add('compact');
     },
@@ -969,9 +980,8 @@ const app = {
         document.getElementById('projectFilter').value  = '';
         document.getElementById('supplierFilter').value = '';
         this.hideCompleted = false;
-        const btn = document.getElementById('toggleCompletedBtn');
-        btn.classList.remove('active');
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Hide Completed';
+        localStorage.setItem('po_hideCompleted', '0');
+        this._syncHideCompletedBtn();
         this.renderItems();
     },
 
@@ -994,15 +1004,8 @@ const app = {
 
     toggleHideCompleted() {
         this.hideCompleted = !this.hideCompleted;
-        const btn = document.getElementById('toggleCompletedBtn');
-        const eyeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-        if (this.hideCompleted) {
-            btn.classList.add('active');
-            btn.innerHTML = `${eyeIcon} Show Completed`;
-        } else {
-            btn.classList.remove('active');
-            btn.innerHTML = `${eyeIcon} Hide Completed`;
-        }
+        localStorage.setItem('po_hideCompleted', this.hideCompleted ? '1' : '0');
+        this._syncHideCompletedBtn();
         this.renderItems();
     },
 
