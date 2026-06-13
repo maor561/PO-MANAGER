@@ -529,6 +529,57 @@ const app = {
         this.renderItems();
     },
 
+    /* ── Stage quick-edit (card / mobile view) ─────────────── */
+    // Tapping a stage pill in card mode opens this picker so the
+    // user can enter a date or text value for that column.
+    openStagePicker(itemId, stageId) {
+        const item  = this.items.find(i => i.id === itemId);
+        const stage = this.stages.find(s => s.id === stageId);
+        if (!item || !stage) return;
+
+        document.getElementById('stagePickerOverlay')?.remove();
+
+        const isText  = stage.type === 'text';
+        const curVal  = item[stage.key] || '';
+        const safeVal = String(curVal).replace(/"/g, '&quot;');
+        const field = isText
+            ? `<input type="text" id="stagePickerInput" class="sp-field" value="${safeVal}" placeholder="Enter ${stage.name}" autocomplete="off">`
+            : `<input type="date" id="stagePickerInput" class="sp-field" value="${curVal}">`;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'stagePickerOverlay';
+        overlay.className = 'sp-overlay';
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+        overlay.innerHTML = `
+          <div class="sp-box">
+            <div class="sp-head">
+              <span class="sp-pn">${item.partNumber || '—'}</span>
+              <span class="sp-title">${stage.name}</span>
+            </div>
+            ${field}
+            <div class="sp-actions">
+              <button class="sp-btn sp-clear" onclick="app.saveStagePicker('${itemId}','${stageId}',true)">Clear</button>
+              <button class="sp-btn sp-cancel" onclick="document.getElementById('stagePickerOverlay').remove()">Cancel</button>
+              <button class="sp-btn sp-save" onclick="app.saveStagePicker('${itemId}','${stageId}',false)">Save</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+        setTimeout(() => {
+            const inp = document.getElementById('stagePickerInput');
+            if (inp) inp.focus();
+        }, 60);
+    },
+
+    async saveStagePicker(itemId, stageId, clear) {
+        const stage = this.stages.find(s => s.id === stageId);
+        const inp   = document.getElementById('stagePickerInput');
+        const val   = clear ? '' : (inp ? inp.value.trim() : '');
+        document.getElementById('stagePickerOverlay')?.remove();
+        if (!stage) return;
+        if (stage.type === 'text') await this.updateTracingNumber(itemId, stage.key, val);
+        else                       await this.updateStageDate(itemId, stage.key, val);
+    },
+
     async duplicateItem(itemId) {
         const src = this.items.find(i => i.id === itemId);
         if (!src) return;
@@ -697,7 +748,7 @@ const app = {
             const pipeline = this.stages.map(stage => {
                 const isDone = stage.completedKey ? !!item[stage.completedKey] : !!item[stage.key];
                 const lbl    = stage.name.replace(' Date','').replace(' #','#');
-                return `<span class="dstage ${isDone ? 'dstage-done' : 'dstage-todo'}">
+                return `<span class="dstage dstage-tap ${isDone ? 'dstage-done' : 'dstage-todo'}" onclick="event.stopPropagation();app.openStagePicker('${item.id}','${stage.id}')">
                     <span class="dstage-dot">${isDone ? '✓' : '○'}</span>
                     <span class="dstage-lbl">${lbl}</span>
                 </span>`;
@@ -796,7 +847,7 @@ const app = {
             const stagePills = this.stages.map(stage => {
                 const isDone = stage.completedKey ? !!item[stage.completedKey] : !!item[stage.key];
                 const name = stage.name.replace(' Date','').replace(' #','#');
-                return `<span class="stage-pill ${isDone ? 'pill-done' : 'pill-pending'}">${isDone ? '✓' : '○'} ${name}</span>`;
+                return `<span class="stage-pill stage-pill-tap ${isDone ? 'pill-done' : 'pill-pending'}" onclick="app.openStagePicker('${item.id}','${stage.id}')">${isDone ? '✓' : '○'} ${name}</span>`;
             }).join('');
 
             const dets = [];

@@ -1723,3 +1723,85 @@ input[type="file"] { display: none; }
     .btn-action:hover, .btn-ghost:hover, .btn-toggle:hover { opacity: 1; }
     .stage-checkbox { width: 18px; height: 18px; }
 }
+
+/* ─── Stage quick-edit picker (card / mobile view) ───────────── */
+.stage-pill-tap, .dstage-tap {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .08s ease, box-shadow .12s ease;
+}
+.stage-pill-tap:active, .dstage-tap:active { transform: scale(.94); }
+.dstage-tap:hover { box-shadow: 0 0 0 2px rgba(37,99,235,.25); }
+
+.sp-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 9999;
+    animation: spFade .15s ease;
+}
+@keyframes spFade { from { opacity: 0; } to { opacity: 1; } }
+
+.sp-box {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 40px rgba(0,0,0,.25);
+    animation: spSlide .2s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes spSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.sp-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.sp-pn    { font-weight: 800; font-size: 16px; color: var(--gray-900); }
+.sp-title { font-size: 13px; color: var(--gray-500); font-weight: 600; }
+
+.sp-field {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 13px 14px;
+    min-height: 48px;
+    border: 2px solid var(--gray-200);
+    border-radius: 12px;
+    color: var(--gray-900);
+    background: var(--gray-50, #f9fafb);
+    transition: border-color .15s ease;
+}
+.sp-field:focus { outline: none; border-color: #2563eb; background: #fff; }
+
+.sp-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+.sp-btn {
+    flex: 1;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: filter .12s ease, background .12s ease;
+}
+.sp-clear  { flex: 0 0 auto; padding: 13px 16px; background: #fee2e2; color: #b91c1c; }
+.sp-cancel { background: var(--gray-100); color: var(--gray-700); }
+.sp-save   { background: #2563eb; color: #fff; }
+.sp-btn:active { filter: brightness(.92); }
+
+/* On larger screens center the sheet as a dialog */
+@media (min-width: 640px) {
+    .sp-overlay { align-items: center; }
+    .sp-box { border-radius: 18px; }
+}
