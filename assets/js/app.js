@@ -932,20 +932,20 @@ const app = {
         return history;
     },
 
-    // Delayed = OPEN order whose Promise Date has already passed (still stuck / actionable now)
+    // Delayed (red row) = OPEN order whose Arrival Date (ETA) has already passed
     isArrivalDelayed(item) {
-        if (!item.promiseDate || item.hslwhDate) return false;
+        if (!item.arrivalDate || item.hslwhDate) return false;
         const today = new Date(); today.setHours(0,0,0,0);
-        const promise = new Date(item.promiseDate); promise.setHours(0,0,0,0);
-        return today > promise;
+        const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
+        return today > arrival;
     },
 
-    // Due Soon = OPEN order whose Promise Date falls within the next `days`
+    // Due Soon (orange row) = OPEN order whose Arrival Date (ETA) falls within the next `days`
     isArrivingSoon(item, days = 7) {
-        if (!item.promiseDate || item.hslwhDate) return false;
+        if (!item.arrivalDate || item.hslwhDate) return false;
         const today = new Date(); today.setHours(0,0,0,0);
-        const promise = new Date(item.promiseDate); promise.setHours(0,0,0,0);
-        const diff = (promise - today) / 86400000;
+        const arrival = new Date(item.arrivalDate); arrival.setHours(0,0,0,0);
+        const diff = (arrival - today) / 86400000;
         return diff >= 0 && diff <= days;
     },
 
