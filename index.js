@@ -56,8 +56,6 @@ const TRACKED_FIELDS = [
     { key: 'promiseDate',   label: 'Promise Date'  },
     { key: 'arrivalDate',   label: 'Arrival Date'  },
     { key: 'hslwhDate',     label: 'HSL WH Date'   },
-    { key: 'eqDate',        label: 'EQ Date'       },
-    { key: 'cocDate',       label: 'COC Date'      },
     { key: 'trackingNumber',label: 'Tracking#'     },
     { key: 'wd',            label: 'Working Days'  },
     { key: 'notes',         label: 'Notes'         },
